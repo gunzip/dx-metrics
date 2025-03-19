@@ -1,0 +1,6 @@
+.env
+.env.*
+*.csv
+test.*
+output/*
+backup/*
