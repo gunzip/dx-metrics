@@ -45,7 +45,7 @@ dashboard "workflow_metrics" {
   container {
     chart {
       title = "Deployment Frequency to Production"
-      type  = "column"
+      type  = "line"
       width = 6
         
       sql = <<EOQ
@@ -106,6 +106,7 @@ dashboard "workflow_metrics" {
           WHERE 
             w.result->>'repository_full_name' = $2
             AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
+            AND w.result->>'name' != 'CodeQL'
           GROUP BY 
             DATE((wr.result->>'created_at')::timestamp),
             CASE
@@ -130,38 +131,6 @@ dashboard "workflow_metrics" {
     }
 
     chart {
-      title = "DX Pipelines Successful Runs"
-      type  = "line"
-      width = 6
-        
-      sql = <<EOQ
-        SELECT 
-          DATE((wr.result->>'created_at')::timestamp) as run_date,
-          SUM(CASE WHEN TRIM(wr.result->>'conclusion') = 'success' THEN 1 ELSE 0 END) as successful_runs,
-          SUM(CASE WHEN TRIM(wr.result->>'conclusion') = 'failure' THEN 1 ELSE 0 END) as failed_runs
-        FROM 
-          select_from_dynamic_table($1, 'github_actions_repository_workflow_run') wr
-        JOIN 
-          select_from_dynamic_table($1, 'github_workflow') w 
-            ON (wr.result->>'workflow_id')::bigint = (w.result->>'id')::bigint
-          AND w.result->>'repository_full_name' = wr.result->>'repository_full_name'
-        WHERE 
-          w.result->>'repository_full_name' = $2
-          AND POSITION('pagopa/dx' IN w.result->>'pipeline') > 0 
-          AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
-          AND TRIM(wr.result->>'conclusion') IN ('success', 'failure')
-        GROUP BY 
-          DATE((wr.result->>'created_at')::timestamp)
-        ORDER BY 
-          run_date ASC;
-      EOQ
-
-      args = [self.input.repository.value,
-              with.config.rows[0].repository_full_name,
-              self.input.time_interval.value]
-    }
-
-    chart {
       title = "Pipelines Failures"
       type  = "bar"
       width = 6
@@ -181,6 +150,7 @@ dashboard "workflow_metrics" {
           w.result->>'repository_full_name' = $2
           AND TRIM(wr.result->>'conclusion') = 'failure'
           AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
+          AND w.result->>'name' != 'CodeQL'
         GROUP BY 
           workflow_name
         ORDER BY 
@@ -221,6 +191,7 @@ dashboard "workflow_metrics" {
           AND wr.result->>'status' = 'completed' AND TRIM(wr.result->>'conclusion') = 'success'
           AND (wr.result->>'updated_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
           AND (wr.result->>'updated_at')::timestamp <= CURRENT_DATE
+          AND w.result->>'name' != 'CodeQL'
         GROUP BY
           workflow_name
         ORDER BY
@@ -234,6 +205,46 @@ dashboard "workflow_metrics" {
 
       series "average_duration_minutes" {
         title = "Average Duration (minutes)"
+      }
+    }
+
+    chart {
+      title = "Pipelines Run Count"
+      type  = "bar"
+      width = 6
+        
+      sql = <<EOQ
+
+        SELECT
+            CONCAT(CASE WHEN POSITION('pagopa/dx' IN w.result->>'pipeline') > 0 
+            THEN 'DX ' ELSE '' END, w.result->>'name') AS workflow_name,
+          COUNT(*) AS run_count
+        FROM
+          select_from_dynamic_table($1, 'github_actions_repository_workflow_run') wr
+        JOIN
+          select_from_dynamic_table($1, 'github_workflow') w
+        ON
+          (wr.result->>'workflow_id')::bigint = (w.result->>'id')::bigint
+          AND wr.result->>'repository_full_name' = w.result->>'repository_full_name'
+        WHERE
+          wr.result->>'repository_full_name' = $2
+          AND wr.result->>'status' = 'completed' AND TRIM(wr.result->>'conclusion') = 'success'
+          AND (wr.result->>'updated_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
+          AND (wr.result->>'updated_at')::timestamp <= CURRENT_DATE
+          AND w.result->>'name' != 'CodeQL'
+        GROUP BY
+          workflow_name
+        ORDER BY
+          workflow_name;
+
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+
+      series "cumulative_duration_minutes" {
+        title = "Cumulative Duration (minutes)"
       }
     }
 
@@ -261,6 +272,7 @@ dashboard "workflow_metrics" {
           AND wr.result->>'status' = 'completed' AND TRIM(wr.result->>'conclusion') = 'success'
           AND (wr.result->>'updated_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
           AND (wr.result->>'updated_at')::timestamp <= CURRENT_DATE
+          AND w.result->>'name' != 'CodeQL'
         GROUP BY
           workflow_name
         ORDER BY
@@ -298,6 +310,7 @@ dashboard "workflow_metrics" {
             AND TRIM(wr.result->>'conclusion') IN ('success', 'failure')
         WHERE wr.result->>'repository_full_name' = $2
         AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
+        AND w.result->>'name' != 'CodeQL'
         GROUP BY w.result->>'name'
         ORDER BY total_runs DESC;
       EOQ
