@@ -8,7 +8,7 @@ repositories:
   - "dx"
   - "developer-portal"
   - "io-wallet"
-#  - "io-infra"
+  - "io-infra"
 #  - "io-cgn"
 #  - "selfcare-onboarding"
 dx_team_members:
