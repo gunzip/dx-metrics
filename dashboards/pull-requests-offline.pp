@@ -149,25 +149,48 @@ dashboard "github_repository_metrics" {
 
     chart {
       title = "New Pull Requests"
-      type  = "line"
+      type  = "column"
       width = 6
       
       sql = <<EOQ
-        WITH date_series AS (
-          SELECT generate_series(
-              NOW() - CAST($3 AS interval),
-              NOW(),
-              '1 day'::interval
-          )::date AS date
+        WITH time_check AS (
+            SELECT CAST($3 AS interval) < INTERVAL '240 days' AS is_daily
+        ),
+        date_series AS (
+            SELECT generate_series(
+                NOW() - CAST($3 AS interval),
+                NOW(),
+                '1 day'::interval
+            )::date AS date
+            WHERE (SELECT is_daily FROM time_check)
+            UNION ALL
+            SELECT generate_series(
+                date_trunc('week', NOW() - CAST($3 AS interval))::date,
+                date_trunc('week', NOW())::date,
+                '7 days'::interval
+            )::date AS date
+            WHERE NOT (SELECT is_daily FROM time_check)
+        ),
+        pr_counts AS (
+            SELECT 
+                CASE 
+                    WHEN (SELECT is_daily FROM time_check)
+                    THEN (gpr.result->>'created_at')::timestamp::date
+                    ELSE date_trunc('week', (gpr.result->>'created_at')::timestamp)::date
+                END AS pr_date,
+                COUNT(*) AS pr_count
+            FROM select_from_dynamic_table($1, 'github_pull_request') gpr
+            WHERE gpr.result->>'repository_full_name' = $2
+            AND (gpr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
+            AND (gpr.result->>'created_at')::timestamp <= NOW()
+            GROUP BY pr_date
         )
         SELECT 
             ds.date,
-            COUNT((gpr.result->>'created_at')::timestamp) AS pr_count
+            COALESCE(pc.pr_count, 0) AS pr_count
         FROM date_series ds
-        LEFT JOIN select_from_dynamic_table($1, 'github_pull_request') gpr
-            ON ds.date = (gpr.result->>'created_at')::timestamp::date
-            AND gpr.result->>'repository_full_name' = $2
-        GROUP BY ds.date
+        LEFT JOIN pr_counts pc
+            ON ds.date = pc.pr_date
         ORDER BY ds.date;
       EOQ
 

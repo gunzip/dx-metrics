@@ -44,14 +44,18 @@ dashboard "workflow_metrics" {
 
   container {
     chart {
-      title = "Deployment Frequency to Production"
+      title = "Deployments to Production (moving average)"
       type  = "line"
       width = 6
-        
+
       sql = <<EOQ
         SELECT 
-          DATE(wr.result->>'created_at') as run_date,
-          COUNT(*) as deployment_count
+          DATE_TRUNC('week', (wr.result->>'created_at')::timestamp) as run_week,
+          -- COUNT(*) as weekly_deployment_count,
+          AVG(COUNT(*)) OVER (
+            ORDER BY DATE_TRUNC('week', (wr.result->>'created_at')::timestamp)
+            ROWS BETWEEN 3 PRECEDING AND CURRENT ROW
+          ) as moving_avg_deployment_freq
         FROM 
           select_from_dynamic_table($1, 'github_actions_repository_workflow_run') wr
         JOIN 
@@ -67,9 +71,9 @@ dashboard "workflow_metrics" {
           AND TRIM(wr.result->>'conclusion') = 'success'
           AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
         GROUP BY 
-          DATE(wr.result->>'created_at')
+          DATE_TRUNC('week', (wr.result->>'created_at')::timestamp)
         ORDER BY 
-          run_date ASC;
+          run_week ASC;
       EOQ
 
       args = [self.input.repository.value,
