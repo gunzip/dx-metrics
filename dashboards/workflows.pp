@@ -61,6 +61,7 @@ dashboard "workflow_metrics" {
         WHERE 
           w.result->>'repository_full_name' = $2
           AND (POSITION('deploy' IN LOWER(w.result->>'name')) > 0
+            OR POSITION('delivery' IN LOWER(w.result->>'name')) > 0
             OR POSITION('release' IN LOWER(w.result->>'name')) > 0
             OR POSITION('apply' IN LOWER(w.result->>'name')) > 0)
           AND TRIM(wr.result->>'conclusion') = 'success'
