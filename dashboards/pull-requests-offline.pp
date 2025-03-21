@@ -5,7 +5,7 @@
 # }
 
 dashboard "github_repository_metrics" {
-  title = "Pull Requests Metrics (offline)"
+  title = "Pull Requests Metrics (cached)"
 
   input "repository" {
     title = "GitHub Repository"

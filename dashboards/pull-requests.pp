@@ -5,7 +5,7 @@
 # }
 
 dashboard "github_repository_metrics_online" {
-  title = "Pull Requests Metrics (online)"
+  title = "Pull Requests Metrics (real time)"
 
   input "time_interval" {
     title = "Time Interval"

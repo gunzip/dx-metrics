@@ -1,5 +1,5 @@
 dashboard "dx_requests_metrics" {
-  title = "Team DX Requests Metrics (offline)"
+  title = "Team DX Requests Metrics (cached)"
 
   card {
     title = "Opened requests (total)"

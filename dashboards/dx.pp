@@ -1,5 +1,5 @@
 dashboard "dx_metrics" {
-  title = "Team DX  Metrics (online)"
+  title = "Team DX  Metrics (real time)"
 
   input "time_interval_days" {
     title = "Time Interval"
@@ -15,7 +15,7 @@ dashboard "dx_metrics" {
   chart {
     title = "Pull Requests on IO-Infra"
     type  = "column"
-    width = 12
+    width = 6
     
     sql = <<EOQ
       WITH time_check AS (
@@ -52,9 +52,9 @@ dashboard "dx_metrics" {
                   FROM config.yml_file
               ) THEN 1 ELSE 0 END) AS pr_count_not_in
           FROM select_from_dynamic_table('io-infra', 'github_pull_request') gpr
-          WHERE gpr.result->>'repository_full_name' = 'pagopa/io-infra'
-          AND (gpr.result->>'created_at')::timestamp >= NOW() - ($1 * INTERVAL '1 day')
-          AND (gpr.result->>'created_at')::timestamp <= NOW()
+          WHERE
+              (gpr.result->>'created_at')::timestamp >= NOW() - ($1 * INTERVAL '1 day')
+              AND (gpr.result->>'created_at')::timestamp <= NOW()
           GROUP BY pr_date
       )
       SELECT 
@@ -68,13 +68,12 @@ dashboard "dx_metrics" {
     EOQ
 
     args = [self.input.time_interval_days.value]
-    
   }
-
 
   chart {
     type = "column"
     title = "DX Members Commits on Non DX Repositories"
+    width = 6
 
     sql = <<EOQ
 
@@ -102,8 +101,28 @@ dashboard "dx_metrics" {
   }
 
   table {
+    title = "Pull Requests on IO-Infra"
+    width = 6
+
+    sql = <<EOQ
+      SELECT 
+        (((gpr.result->>'author')::jsonb)->>'login')::text AS author,
+        gpr.result->>'created_at' AS created_at
+      FROM 
+        select_from_dynamic_table('io-infra', 'github_pull_request') gpr
+      WHERE 
+        (gpr.result->>'created_at')::timestamp >= NOW() - ($1 * INTERVAL '1 day')
+        AND (gpr.result->>'created_at')::timestamp <= NOW()
+      ORDER BY 
+        (gpr.result->>'created_at')::timestamp DESC;
+    EOQ
+
+    args = [self.input.time_interval_days.value]
+  }
+
+  table {
     title = "DX Members Commit by Repository"
-    width = 12
+    width = 6
     
     sql = <<EOQ
 
@@ -118,7 +137,9 @@ dashboard "dx_metrics" {
       ON 
         gsc.query = mq.search_string
       WHERE 
-        POSITION('pagopa' IN gsc.repository->>'full_name') = 1
+        POSITION('pagopa/' IN gsc.repository->>'full_name') = 1 AND
+        POSITION('pagopa-dx' IN gsc.repository->>'full_name') = 0 AND
+        POSITION('pagopa/terraform' IN gsc.repository->>'full_name') = 0
       GROUP BY 
         mq.member_name,
         gsc.repository->>'full_name'

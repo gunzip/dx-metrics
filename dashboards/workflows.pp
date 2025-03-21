@@ -1,5 +1,5 @@
 dashboard "workflow_metrics" {
-  title = "Workflow  Metrics (offline)"
+  title = "Workflow  Metrics (cached)"
 
   input "repository" {
     title = "GitHub Repository"
