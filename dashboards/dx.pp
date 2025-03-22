@@ -10,6 +10,7 @@ dashboard "dx_metrics" {
     option "240" { label="240 days" }
     option "300" { label="300 days" }
     option "360" { label="360 days" } 
+    option "720" { label="720 days" } 
   }
 
   chart {

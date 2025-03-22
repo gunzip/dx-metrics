@@ -27,6 +27,7 @@ dashboard "workflow_metrics" {
     option "240 days" {}
     option "300 days" {}
     option "360 days" {}
+    option "720 days" {}
   }
 
   with "config" {
