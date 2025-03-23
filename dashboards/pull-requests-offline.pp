@@ -346,52 +346,48 @@ dashboard "github_repository_metrics" {
 
 
     chart {
-      title = "Pull Requests Size (buckets)"
+      title = "Pull Requests Size (additions)"
       type  = "bar"
       width = 6
 
       sql = <<EOQ
-        WITH data AS (
-            SELECT 
-                (result->>'additions')::numeric AS additions
-            FROM 
-                select_from_dynamic_table($1, 'github_pull_request')
-            WHERE 
-                result->>'repository_full_name' = $2
-                AND (NULLIF(result->>'created_at', '<nil>')::timestamp) >= NOW() - CAST($3 AS interval)
-                AND (result->>'additions')::numeric IS NOT NULL
-        ),
-        percentiles AS (
-            SELECT 
-                percentile_cont(ARRAY[0.25, 0.5, 0.75]) WITHIN GROUP (ORDER BY additions) AS perc_vals
-            FROM data
-        ),
-        bucketed AS (
-            SELECT 
-                CASE 
-                    -- Più bucket nella parte bassa (assumendo che ci siano più PR piccole)
-                    WHEN additions < (SELECT perc_vals[1] FROM percentiles) THEN 
-                        width_bucket(additions, 0, (SELECT perc_vals[1] FROM percentiles), 3)  -- 3 bucket nel primo quartile
-                    WHEN additions < (SELECT perc_vals[2] FROM percentiles) THEN 
-                        4 + width_bucket(additions, (SELECT perc_vals[1] FROM percentiles), (SELECT perc_vals[2] FROM percentiles), 2)  -- 2 bucket nel secondo quartile
-                    WHEN additions < (SELECT perc_vals[3] FROM percentiles) THEN 
-                        6 + width_bucket(additions, (SELECT perc_vals[2] FROM percentiles), (SELECT perc_vals[3] FROM percentiles), 1)  -- 1 bucket nel terzo quartile
-                    ELSE 
-                        7 + width_bucket(additions, (SELECT perc_vals[3] FROM percentiles), (SELECT MAX(additions) FROM data), 2)  -- 2 bucket nell'ultimo quartile
-                END AS bucket_num,
-                additions
-            FROM data
-        )
-        SELECT
-            -- bucket_num,
-            ROUND(MIN(additions), 2) || ' - ' || ROUND(MAX(additions), 2) AS size_range,
-            COUNT(*) AS pr_count
-        FROM 
-            bucketed
-        GROUP BY 
-            bucket_num
-        ORDER BY 
-            bucket_num;      
+      WITH data AS (
+          SELECT 
+              (result->>'additions')::numeric AS additions
+          FROM 
+              select_from_dynamic_table($1, 'github_pull_request')
+          WHERE 
+              result->>'repository_full_name' = $2
+              AND (NULLIF(result->>'created_at', '<nil>')::timestamp) >= NOW() - CAST($3 AS interval)
+              AND (result->>'additions')::numeric IS NOT NULL
+      ),
+      bucketed AS (
+          SELECT 
+              CASE 
+                  WHEN additions <= 50 THEN '1 - 50'
+                  WHEN additions <= 200 THEN '50 - 200'
+                  WHEN additions <= 500 THEN '200 - 500'
+                  WHEN additions <= 1000 THEN '500 - 1000'
+                  ELSE '> 1000'
+              END AS size_range,
+              additions
+          FROM data
+      )
+      SELECT 
+          size_range,
+          COUNT(*) AS pr_count
+      FROM 
+          bucketed
+      GROUP BY 
+          size_range
+      ORDER BY 
+          CASE 
+              WHEN size_range = '1 - 50' THEN 1
+              WHEN size_range = '50 - 200' THEN 2
+              WHEN size_range = '200 - 500' THEN 3
+              WHEN size_range = '500 - 1000' THEN 4
+              WHEN size_range = '> 1000' THEN 5
+          END;
       EOQ
 
       args = [self.input.repository.value,
