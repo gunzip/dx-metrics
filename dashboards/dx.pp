@@ -161,7 +161,7 @@ dashboard "dx_metrics" {
       FROM 
         github_search_code gsc
       WHERE 
-        gsc.query = 'pagopa/dx AND org:pagopa'
+        gsc.query = 'pagopa/dx org:pagopa'
         AND POSITION('dx' IN gsc.repository->>'full_name') = 0;  
       EOQ
   }
