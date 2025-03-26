@@ -10,6 +10,9 @@ repositories:
   - "io-wallet"
   - "io-infra"
   - "io-ipatente"
+  - "io-functions-admin"
+  - "io-functions-services"
+  - "io-functions-app"
 #  - "io-cgn"
 #  - "selfcare-onboarding"
 dx_team_members:
