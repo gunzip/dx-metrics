@@ -53,7 +53,7 @@ dashboard "github_repository_metrics" {
 
   container {
     chart {
-      title = "PR Cycle Time in Days (moving average)"
+      title = "Merged PR Cycle Time (moving average)"
       type  = "line"
       width = 6
 
@@ -70,17 +70,21 @@ dashboard "github_repository_metrics" {
         ),
         pr_lead_times AS (
             SELECT 
-                NULLIF(p.result->>'created_at', '')::timestamp AS created_at,
-                COALESCE(NULLIF(p.result->>'closed_at', '<nil>')::timestamp, CURRENT_TIMESTAMP) AS effective_closed_at, -- Gestisce '<nil>'
+                (p.result->>'created_at')::timestamp AS created_at,
+                (p.result->>'merged_at')::timestamp AS merged_at,
                 EXTRACT(EPOCH FROM (
-                    COALESCE(NULLIF(p.result->>'closed_at', '<nil>')::timestamp, CURRENT_TIMESTAMP) 
-                    - NULLIF(p.result->>'created_at', '')::timestamp
+                    (p.result->>'merged_at')::timestamp
+                  - (p.result->>'created_at')::timestamp
                 )) / 86400 AS lead_time_days
             FROM select_from_dynamic_table($1, 'github_pull_request') p
             WHERE p.result->>'repository_full_name' = $2
-              AND (((p.result->>'author')::jsonb)->'login')::text NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
-              AND NULLIF(p.result->>'created_at', '')::timestamp >= NOW() - CAST($3 AS interval)
-              AND p.result->>'closed_at' != '<nil>' -- Only consider closed PRs
+              -- Filter out bots
+              AND (((p.result->>'author')::jsonb)->'login')::text
+                NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+              -- Only for PR merged in the latest N days
+              AND (p.result->>'merged_at')::timestamp >= NOW() - CAST($3 AS interval)
+              AND p.result->>'created_at' != '' AND p.result->>'merged_at' != ''
+              AND p.result->>'created_at' != '<nil>' AND p.result->>'merged_at' != '<nil>'
         ),
         min_date AS (
             SELECT MIN(date) AS first_date FROM time_series
@@ -88,9 +92,10 @@ dashboard "github_repository_metrics" {
         SELECT 
             t.date,
             CASE
+                -- Moving average
                 WHEN t.date >= (SELECT first_date FROM min_date) + INTERVAL '7 days'
                 THEN AVG(p.lead_time_days) FILTER (WHERE p.created_at::date <= t.date 
-                    AND p.effective_closed_at::date >= t.date - INTERVAL '7 days')::numeric(10,2)
+                    AND p.merged_at::date >= t.date - INTERVAL '7 days')::numeric(10,2)
             END AS rolling_lead_time_days
         FROM time_series t
         LEFT JOIN pr_lead_times p ON (p.created_at::date <= t.date)
