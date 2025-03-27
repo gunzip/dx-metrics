@@ -70,7 +70,7 @@ dashboard "github_repository_metrics" {
         ),
         pr_lead_times AS (
             SELECT 
-                NULLIF(p.result->>'created_at', '')::timestamp AS created_at, -- Gestisce stringhe vuote, se presenti
+                NULLIF(p.result->>'created_at', '')::timestamp AS created_at,
                 COALESCE(NULLIF(p.result->>'closed_at', '<nil>')::timestamp, CURRENT_TIMESTAMP) AS effective_closed_at, -- Gestisce '<nil>'
                 EXTRACT(EPOCH FROM (
                     COALESCE(NULLIF(p.result->>'closed_at', '<nil>')::timestamp, CURRENT_TIMESTAMP) 
@@ -78,8 +78,9 @@ dashboard "github_repository_metrics" {
                 )) / 86400 AS lead_time_days
             FROM select_from_dynamic_table($1, 'github_pull_request') p
             WHERE p.result->>'repository_full_name' = $2
-              AND (((p.result->>'author')::jsonb)->'login')::text NOT IN ('dependabot', 'dx-pagopa-bot')
+              AND (((p.result->>'author')::jsonb)->'login')::text NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
               AND NULLIF(p.result->>'created_at', '')::timestamp >= NOW() - CAST($3 AS interval)
+              AND p.result->>'closed_at' != '<nil>' -- Only consider closed PRs
         ),
         min_date AS (
             SELECT MIN(date) AS first_date FROM time_series
