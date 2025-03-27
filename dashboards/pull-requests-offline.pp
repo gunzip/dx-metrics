@@ -55,7 +55,7 @@ dashboard "github_repository_metrics" {
     chart {
       title = "Merged PR Cycle Time (moving average)"
       type  = "line"
-      width = 6
+      width = 12
 
       sql = <<EOQ
         WITH time_series AS (
@@ -113,10 +113,68 @@ dashboard "github_repository_metrics" {
     }
 
     chart {
+      title = "Merged Pull Requests"
+      type  = "column"
+      width = 6
+      
+      sql = <<EOQ
+        WITH time_check AS (
+            SELECT CAST($3 AS interval) < INTERVAL '240 days' AS is_daily
+        ),
+        date_series AS (
+            SELECT generate_series(
+                NOW() - CAST($3 AS interval),
+                NOW(),
+                '1 day'::interval
+            )::date AS date
+            WHERE (SELECT is_daily FROM time_check)
+            UNION ALL
+            SELECT generate_series(
+                date_trunc('week', NOW() - CAST($3 AS interval))::date,
+                date_trunc('week', NOW())::date,
+                '7 days'::interval
+            )::date AS date
+            WHERE NOT (SELECT is_daily FROM time_check)
+        ),
+        pr_counts AS (
+            SELECT 
+                CASE 
+                    WHEN (SELECT is_daily FROM time_check)
+                    THEN (gpr.result->>'merged_at')::timestamp::date
+                    ELSE date_trunc('week', (gpr.result->>'merged_at')::timestamp)::date
+                END AS pr_date,
+                COUNT(*) AS pr_count
+            FROM select_from_dynamic_table($1, 'github_pull_request') gpr
+            WHERE gpr.result->>'repository_full_name' = $2
+            AND (gpr.result->>'merged_at')::timestamp >= NOW() - CAST($3 AS interval)
+            AND (gpr.result->>'merged_at')::timestamp <= NOW()
+            AND gpr.result->>'merged_at' <> '<nil>' 
+            AND gpr.result->>'merged_at' IS NOT NULL
+            GROUP BY pr_date
+        )
+        SELECT 
+            ds.date,
+            COALESCE(pc.pr_count, 0) AS pr_count
+        FROM date_series ds
+        LEFT JOIN pr_counts pc
+            ON ds.date = pc.pr_date
+        ORDER BY ds.date;
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+      
+      series "pr_count" {
+        title = "Merged PRs"
+      }
+    }
+
+    chart {
       title = "Unmerged Pull Requests"
       type  = "line"
       width = 6
-      
+
       sql = <<EOQ
         WITH daily_counts AS (
           SELECT 
@@ -207,7 +265,7 @@ dashboard "github_repository_metrics" {
               self.input.time_interval.value]
       
       series "pr_count" {
-        title = "New PRs by day"
+        title = "New PRs"
       }
     }
 

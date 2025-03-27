@@ -69,7 +69,7 @@ export_pull_request_table() {
 
   steampipe_export_github github_pull_request \
     --where "repository_full_name='${repository_full_name}'" \
-    --select repository_full_name,title,number,created_at,closed_at,merged_at,merged_by,author,additions,total_comments_count  \
+    --select repository_full_name,title,number,review_decision,created_at,closed_at,merged_at,merged_by,author,additions,total_comments_count  \
     | tee "${output_file}"
 }
 
