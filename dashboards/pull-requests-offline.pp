@@ -79,7 +79,7 @@ dashboard "github_repository_metrics" {
             FROM select_from_dynamic_table($1, 'github_pull_request') p
             WHERE p.result->>'repository_full_name' = $2
               -- Filter out bots
-              AND (((p.result->>'author')::jsonb)->'login')::text
+              AND (((p.result->>'author')::jsonb)->>'login')::text
                 NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
               -- Only for PR merged in the latest N days
               AND (p.result->>'merged_at')::timestamp >= NOW() - CAST($3 AS interval)
@@ -407,6 +407,40 @@ dashboard "github_repository_metrics" {
       }
     }
 
+    chart {
+      title = "Slowest Pull Requests"
+      type  = "table"
+      width = 12
+
+      sql = <<EOQ
+        SELECT 
+           p.result->>'title' AS title,
+           -- (((p.result->>'author')::jsonb)->>'login')::text AS author,
+           ROUND(EXTRACT(EPOCH FROM (
+                (p.result->>'merged_at')::timestamp - 
+                (p.result->>'created_at')::timestamp
+            )) / 86400, 2) AS lead_time_days,
+          p.result->>'number' AS number,
+          (p.result->>'created_at')::timestamp AS created_at,
+          (p.result->>'merged_at')::timestamp AS merged_at
+        FROM select_from_dynamic_table($1, 'github_pull_request') p
+        WHERE p.result->>'repository_full_name' = $2
+          AND (((p.result->>'author')::jsonb)->>'login')::text 
+            NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+          AND (p.result->>'merged_at')::timestamp >= NOW() - CAST($3 AS interval)
+          AND p.result->>'created_at' != '' AND p.result->>'merged_at' != ''
+          AND p.result->>'created_at' != '<nil>' AND p.result->>'merged_at' != '<nil>'
+        ORDER BY lead_time_days DESC
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+      
+      series "rolling_lead_time_days" {
+        title = "Cycle Time"
+      }
+    }
 
   } # container
 } # dashboard
