@@ -6,7 +6,9 @@ WORKDIR /app
 
 # Set environment variables to avoid interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
-ENV GITHUB_TOKEN=${GITHUB_TOKEN}
+
+# Note: GITHUB_TOKEN is passed via build secret for build-time operations
+# and should also be provided at runtime via docker run -e GITHUB_TOKEN=your_token
 
 # Combine RUN commands and optimize package installation
 RUN apt-get update && \
@@ -51,7 +53,9 @@ RUN mkdir -p /home/appuser && \
 USER appuser
 
 # Install plugins and manage config before declaring volume
-RUN steampipe plugin install csv github config --install-dir .steampipe
+# GITHUB_TOKEN is available during build from ARG
+RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN \
+    steampipe plugin install csv github config --install-dir .steampipe
 
 # Remove default steampipe configuration
 RUN rm -f .steampipe/config/*.spc
@@ -68,7 +72,10 @@ RUN mkdir -p output && \
     chmod -R 755 output
 
 # Initializes the embedded PostgreSQL database
-RUN steampipe query *.sql --install-dir .steampipe
+# Note: Using '|| true' to allow build to continue even if queries fail
+# The queries will be re-run at container startup via entrypoint.sh
+RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN \
+    steampipe query *.sql --install-dir .steampipe || true
 
 # Declare volume after all modifications to .steampipe
 VOLUME ["/app/.steampipe", "/app/output"]

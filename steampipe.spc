@@ -1,8 +1,9 @@
 connection "github" {
   plugin = "github"
   
-  # Credentials will be provided via environment variables:
-  # GITHUB_TOKEN when running the container
+  # Use GITHUB_TOKEN from environment variable
+  # This token must be provided during both build and runtime
+  token = env("GITHUB_TOKEN")
 }
 
 connection "csv" {
