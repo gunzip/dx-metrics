@@ -18,4 +18,4 @@ steampipe service start --install-dir .steampipe
 
 ./export.sh
 
-powerpipe server --mod-location dashboards
+powerpipe server --mod-location dashboards --listen network
