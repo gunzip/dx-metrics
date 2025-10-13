@@ -5,3 +5,5 @@ test.*
 output/*
 backup/*
 .steampipe/
+node_modules/
+*.js
