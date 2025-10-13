@@ -214,7 +214,7 @@ dashboard "workflow_metrics" {
       series "average_duration_minutes" {
         title = "Average Duration (minutes)"
       }
-    }
+    }    
 
     chart {
       title = "Pipelines Run Count"
@@ -294,6 +294,80 @@ dashboard "workflow_metrics" {
 
       series "cumulative_duration_minutes" {
         title = "Cumulative Duration (minutes)"
+      }
+    }
+
+    chart {
+      title = "Infra Plan Duration (minutes)"
+      type  = "line"
+      width = 6
+        
+      sql = <<EOQ
+        SELECT
+          (wr.result->>'created_at')::timestamp AS run_timestamp,
+          EXTRACT(EPOCH FROM ((wr.result->>'updated_at')::timestamp 
+              - (wr.result->>'created_at')::timestamp)) / 60 AS duration_minutes
+        FROM
+          select_from_dynamic_table($1, 'github_actions_repository_workflow_run') wr
+        JOIN
+          select_from_dynamic_table($1, 'github_workflow') w
+        ON
+          (wr.result->>'workflow_id')::bigint = (w.result->>'id')::bigint
+          AND wr.result->>'repository_full_name' = w.result->>'repository_full_name'
+        WHERE
+          wr.result->>'repository_full_name' = $2
+          AND wr.result->>'status' = 'completed' 
+          AND (wr.result->>'created_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
+          AND (wr.result->>'created_at')::timestamp <= CURRENT_DATE
+          AND POSITION('infra_plan.yaml' IN w.result->>'pipeline') > 0
+        ORDER BY
+          run_timestamp ASC;
+
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+
+      series "average_duration_minutes" {
+        title = "Duration (minutes)"
+      }
+    }
+
+    chart {
+      title = "Infra Apply Duration (minutes)"
+      type  = "line"
+      width = 6
+        
+      sql = <<EOQ
+        SELECT
+          (wr.result->>'created_at')::timestamp AS run_timestamp,
+          EXTRACT(EPOCH FROM ((wr.result->>'updated_at')::timestamp 
+              - (wr.result->>'created_at')::timestamp)) / 60 AS duration_minutes
+        FROM
+          select_from_dynamic_table($1, 'github_actions_repository_workflow_run') wr
+        JOIN
+          select_from_dynamic_table($1, 'github_workflow') w
+        ON
+          (wr.result->>'workflow_id')::bigint = (w.result->>'id')::bigint
+          AND wr.result->>'repository_full_name' = w.result->>'repository_full_name'
+        WHERE
+          wr.result->>'repository_full_name' = $2
+          AND wr.result->>'status' = 'completed' 
+          AND (wr.result->>'created_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
+          AND (wr.result->>'created_at')::timestamp <= CURRENT_DATE
+          AND POSITION('infra_apply.yaml' IN w.result->>'pipeline') > 0
+        ORDER BY
+          run_timestamp ASC;
+
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+
+      series "average_duration_minutes" {
+        title = "Duration (minutes)"
       }
     }
 
