@@ -2,10 +2,15 @@ import { Octokit } from "octokit";
 
 // --- Configuration ---
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const REPO_OWNER = "pagopa"; // Example: "microsoft"
-const REPO_NAME = "io-messages"; // Example: "vscode"
-const FILE_PATH = ".github"; // The directory or file path to analyze
+const REPO_OWNER = process.argv[2];
+const REPO_NAME = process.argv[3];
+const FILE_PATH = process.argv[4];
+// ---------------------
 
+if (!GITHUB_TOKEN) {
+  console.error("Error: GITHUB_TOKEN environment variable is not set.");
+  process.exit(1);
+}
 // Initialize Octokit
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 

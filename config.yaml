@@ -13,6 +13,7 @@ repositories:
   - "io-functions-admin"
   - "io-functions-services"
   - "io-functions-app"
+  - "interop-be-monorepo"
 #  - "io-cgn"
 #  - "selfcare-onboarding"
 dx_team_members:

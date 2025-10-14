@@ -36,6 +36,24 @@
         "ms-vscode.vscode-json",
         "ms-python.python"
       ],
+
+      "mcp": {
+        "servers": {
+          "playwright": {
+            "command": "npx",
+            "args": ["@playwright/mcp@latest"],
+            "type": "stdio"
+          },
+          "dx-docs": {
+            "url": "https://api.dev.dx.pagopa.it/mcp",
+            "type": "http",
+            "headers": {
+              "x-gh-pat": "${localEnv:GITHUB_TOKEN}"
+            }
+          }
+        }
+      },
+
       "settings": {
         "terminal.integrated.shell.linux": "/bin/bash"
       }
