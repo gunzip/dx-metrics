@@ -92,3 +92,34 @@ for repo in $REPOSITORIES; do
 done
 
 echo "Export completed successfully!"
+
+# Read dx_team_members from config.yaml and join with commas
+DX_TEAM_MEMBERS=$(yq '.dx_team_members[]' "$CONFIG_FILE" | tr '\n' ',' | sed 's/,$//')
+
+# Read dx_repo from config.yaml
+DX_REPO=$(yq '.dx_repo' "$CONFIG_FILE")
+
+# Loop through repositories and calculate PR lead time for infra
+for repo in $REPOSITORIES; do
+  # Skip if repository matches dx_repo
+  if [ "$repo" = "$DX_REPO" ]; then
+    echo "Skipping IAC PR lead time calculation for ${repo} (dx_repo)"
+    continue
+  fi
+  
+  output_file="output/${repo}_iac_pr_lead_time.csv"
+  
+  # Skip if file already exists
+  if [ -f "${output_file}" ]; then
+    echo "Skipping export for ${repository_full_name} workflows - file ${output_file} already exists"
+    continue
+  fi
+
+  echo "Calculating IAC PR lead time for repository ${repo}"
+  
+  pnpx tsx pr_lead_time.ts "$ORGANIZATION" "$repo" infra "$DX_TEAM_MEMBERS" > "$output_file"
+  
+  echo "IAC PR lead time saved to ${output_file}"
+done
+
+echo "PR lead time calculation completed successfully!"

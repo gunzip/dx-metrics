@@ -5,6 +5,7 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO_OWNER = process.argv[2];
 const REPO_NAME = process.argv[3];
 const FILE_PATH = process.argv[4];
+const AUTHORS_INPUT = process.argv[5]; // Comma-separated list of authors
 // ---------------------
 
 if (!GITHUB_TOKEN) {
@@ -21,15 +22,27 @@ interface PullRequestData {
   createdAt: string;
   mergedAt: string;
   leadTimeDays: number;
+  targetAuthors: string[];
 }
 
 /**
  * Main function to fetch PRs, calculate lead times, and generate a CSV report.
  */
 async function getPullRequestLeadTimeForPath() {
+  // Parse the authors list (optional parameter)
+  const targetAuthors = AUTHORS_INPUT
+    ? AUTHORS_INPUT.split(",").map((author) => author.trim().toLowerCase())
+    : [];
+
   console.error(
     `Searching for PRs affecting path "${FILE_PATH}" in repository ${REPO_OWNER}/${REPO_NAME}...`
   );
+
+  if (targetAuthors.length > 0) {
+    console.error(
+      `Tracking contributions from authors: ${targetAuthors.join(", ")}`
+    );
+  }
 
   try {
     // 1. Get all commits that have affected the specified path
@@ -50,9 +63,19 @@ async function getPullRequestLeadTimeForPath() {
     );
 
     const pullRequestMap = new Map<number, PullRequestData>();
+    // Track which PRs have contributions from target authors
+    const prAuthorsMap = new Map<number, Set<string>>();
 
     // 2. For each commit, find its associated pull requests
     for (const commit of commits) {
+      // Get the author/committer of this commit
+      const commitAuthor = commit.author?.login?.toLowerCase();
+      const commitCommitter = commit.committer?.login?.toLowerCase();
+      const isTargetAuthor =
+        targetAuthors.length > 0 &&
+        ((commitAuthor && targetAuthors.includes(commitAuthor)) ||
+          (commitCommitter && targetAuthors.includes(commitCommitter)));
+
       const prs = await octokit.rest.repos.listPullRequestsAssociatedWithCommit(
         {
           owner: REPO_OWNER,
@@ -62,6 +85,16 @@ async function getPullRequestLeadTimeForPath() {
       );
 
       for (const pr of prs.data) {
+        // Track target author contributions for this PR
+        if (isTargetAuthor) {
+          if (!prAuthorsMap.has(pr.number)) {
+            prAuthorsMap.set(pr.number, new Set());
+          }
+          if (commitAuthor) prAuthorsMap.get(pr.number)!.add(commitAuthor);
+          if (commitCommitter)
+            prAuthorsMap.get(pr.number)!.add(commitCommitter);
+        }
+
         // 3. Process only merged PRs and avoid duplicates
         if (pr.merged_at && !pullRequestMap.has(pr.number)) {
           const createdAt = new Date(pr.created_at);
@@ -72,12 +105,18 @@ async function getPullRequestLeadTimeForPath() {
             (mergedAt.getTime() - createdAt.getTime()) / 1000;
           const leadTimeInDays = leadTimeInSeconds / (60 * 60 * 24);
 
+          // Get the list of target authors who contributed to this PR
+          const contributingAuthors = prAuthorsMap.has(pr.number)
+            ? Array.from(prAuthorsMap.get(pr.number)!)
+            : [];
+
           pullRequestMap.set(pr.number, {
             number: pr.number,
             title: pr.title,
             createdAt: pr.created_at,
             mergedAt: pr.merged_at,
             leadTimeDays: leadTimeInDays,
+            targetAuthors: contributingAuthors,
           });
         }
       }
@@ -103,8 +142,10 @@ async function getPullRequestLeadTimeForPath() {
 
     // 5. Generate and print CSV output
     // Print header
+    const repoFullName = `${REPO_OWNER}/${REPO_NAME}`;
+    const hasAuthorColumn = targetAuthors.length > 0 ? '"target_authors"' : "";
     console.log(
-      `"PR Title","Opening Date","Closing Date","PR Number","Lead Time (Days)"`
+      `repository_full_name,title,created_at,merged_at,number,lead_time_days,${hasAuthorColumn}`
     );
 
     // Print data rows
@@ -112,9 +153,15 @@ async function getPullRequestLeadTimeForPath() {
       // To handle titles with commas, we enclose them in quotes and escape existing quotes.
       const safeTitle = `"${pr.title.replace(/"/g, '""')}"`;
       const leadTimeFixed = pr.leadTimeDays.toFixed(2);
+      // Filter out 'web-flow' from the target authors list
+      const filteredAuthors = pr.targetAuthors.filter(
+        (author) => author !== "web-flow"
+      );
+      const authorColumn =
+        targetAuthors.length > 0 ? `,"${filteredAuthors.join(", ")}"` : "";
 
       console.log(
-        `${safeTitle},${pr.createdAt},${pr.mergedAt},${pr.number},${leadTimeFixed}`
+        `"${repoFullName}",${safeTitle},${pr.createdAt},${pr.mergedAt},${pr.number},${leadTimeFixed}${authorColumn}`
       );
     }
   } catch (error: unknown) {

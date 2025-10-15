@@ -14,6 +14,7 @@ fi
 # This in case we don't run in a container
 steampipe query *.sql --install-dir .steampipe
 
+steampipe service stop --install-dir .steampipe
 steampipe service start --install-dir .steampipe
 
 ./export.sh
