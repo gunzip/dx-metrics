@@ -19,6 +19,7 @@ const octokit = new Octokit({ auth: GITHUB_TOKEN });
 interface PullRequestData {
   number: number;
   title: string;
+  author: string;
   createdAt: string;
   mergedAt: string;
   leadTimeDays: number;
@@ -113,6 +114,7 @@ async function getPullRequestLeadTimeForPath() {
           pullRequestMap.set(pr.number, {
             number: pr.number,
             title: pr.title,
+            author: pr.user?.login || "unknown",
             createdAt: pr.created_at,
             mergedAt: pr.merged_at,
             leadTimeDays: leadTimeInDays,
@@ -145,7 +147,7 @@ async function getPullRequestLeadTimeForPath() {
     const repoFullName = `${REPO_OWNER}/${REPO_NAME}`;
     const hasAuthorColumn = targetAuthors.length > 0 ? '"target_authors"' : "";
     console.log(
-      `repository_full_name,title,created_at,merged_at,number,lead_time_days,${hasAuthorColumn}`
+      `repository_full_name,title,author,created_at,merged_at,number,lead_time_days,${hasAuthorColumn}`
     );
 
     // Print data rows
@@ -161,7 +163,7 @@ async function getPullRequestLeadTimeForPath() {
         targetAuthors.length > 0 ? `,"${filteredAuthors.join(", ")}"` : "";
 
       console.log(
-        `"${repoFullName}",${safeTitle},${pr.createdAt},${pr.mergedAt},${pr.number},${leadTimeFixed}${authorColumn}`
+        `"${repoFullName}",${safeTitle},"${pr.author}",${pr.createdAt},${pr.mergedAt},${pr.number},${leadTimeFixed}${authorColumn}`
       );
     }
   } catch (error: unknown) {

@@ -123,3 +123,21 @@ for repo in $REPOSITORIES; do
 done
 
 echo "PR lead time calculation completed successfully!"
+
+### For each repository in config.yaml, use terrawiz to scan the exported repositories and generate a CSV report
+
+for repo in $REPOSITORIES; do
+
+# Skip if file already exists
+  if [ -f "output/${repo}_terraform_modules.csv" ]; then
+      echo "Skipping terrawiz scan for ${repo} - file output/${repo}_terraform_modules.csv already exists"
+      continue
+  fi
+
+  echo "Running terrawiz scan for repository ${repo}"
+
+  docker run --rm -e GITHUB_TOKEN="$GITHUB_TOKEN" \
+    -v $(pwd)/output:/output ghcr.io/efemaer/terrawiz:latest scan github:pagopa/$repo \
+    -f csv -e /output/${repo}_terraform_modules.csv
+
+done
