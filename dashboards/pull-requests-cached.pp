@@ -55,7 +55,7 @@ dashboard "github_repository_metrics" {
     chart {
       title = "Merged PR Cycle Time (moving average)"
       type  = "line"
-      width = 12
+      width = 6
 
       sql = <<EOQ
         WITH time_series AS (
@@ -109,6 +109,74 @@ dashboard "github_repository_metrics" {
       
       series "rolling_lead_time_days" {
         title = "Cycle Time"
+      }
+    }
+
+    chart {
+      title = "Merged PR Cycle Time (linear regression)"
+      type  = "line"
+      width = 6
+
+      sql = <<EOQ
+        WITH pr_lead_times AS (
+            SELECT 
+                (p.result->>'created_at')::date AS created_date,
+                EXTRACT(EPOCH FROM (
+                    (p.result->>'merged_at')::timestamp
+                  - (p.result->>'created_at')::timestamp
+                )) / 86400 AS lead_time_days,
+                ROW_NUMBER() OVER (ORDER BY (p.result->>'created_at')::date) AS x
+            FROM select_from_dynamic_table($1, 'github_pull_request') p
+            WHERE p.result->>'repository_full_name' = $2
+              AND (((p.result->>'author')::jsonb)->>'login')::text
+                NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+              AND (p.result->>'merged_at')::timestamp >= NOW() - CAST($3 AS interval)
+              AND p.result->>'created_at' != '' AND p.result->>'merged_at' != ''
+              AND p.result->>'created_at' != '<nil>' AND p.result->>'merged_at' != '<nil>'
+        ),
+        stats AS (
+            SELECT
+                COUNT(*) AS n,
+                AVG(x) AS x_avg,
+                AVG(lead_time_days) AS y_avg
+            FROM pr_lead_times
+        ),
+        deviations AS (
+            SELECT
+                SUM((p.x - s.x_avg) * (p.lead_time_days - s.y_avg)) AS numerator,
+                SUM(POWER(p.x - s.x_avg, 2)) AS denominator,
+                s.x_avg,
+                s.y_avg
+            FROM pr_lead_times p
+            CROSS JOIN stats s
+            GROUP BY s.x_avg, s.y_avg
+        ),
+        regression AS (
+            SELECT
+                CASE 
+                    WHEN denominator != 0 THEN numerator / denominator 
+                    ELSE 0 
+                END AS slope,
+                y_avg - (CASE 
+                    WHEN denominator != 0 THEN numerator / denominator 
+                    ELSE 0 
+                END * x_avg) AS intercept
+            FROM deviations
+        )
+        SELECT 
+            p.created_date AS date,
+            (r.slope * p.x + r.intercept)::numeric(10,2) AS trend_line
+        FROM pr_lead_times p
+        CROSS JOIN regression r
+        ORDER BY p.created_date;
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+      
+      series "trend_line" {
+        title = "Trend"
       }
     }
 

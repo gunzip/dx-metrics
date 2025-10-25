@@ -2,19 +2,19 @@ organization: "pagopa"
 # Gathering data takes about 5 minutes per repo
 # depending on the age of the repository.
 repositories:
+  - "dx"
+  - "io-infra"
+  - "io-wallet"
   - "io-messages"
   - "io-services-cms"
   - "io-auth-n-identity-domain"
-  - "dx"
-  - "developer-portal"
-  - "io-wallet"
-  - "io-infra"
   - "io-ipatente"
-  - "io-functions-admin"
-  - "io-functions-services"
-  - "io-functions-app"
+  - "io-cgn"
+  - "io-cdc"
+  - "io-sign"
+  - "developer-portal"
   - "interop-be-monorepo"
-#  - "io-cgn"
+  - "selfcare"
 #  - "selfcare-onboarding"
 dx_team_members:
   - gunzip

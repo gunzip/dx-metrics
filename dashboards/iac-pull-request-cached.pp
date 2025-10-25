@@ -76,7 +76,7 @@ dashboard "iac_metrics" {
                     (p.result->>'merged_at')::timestamp
                   - (p.result->>'created_at')::timestamp
                 )) / 86400 AS lead_time_days
-            FROM select_from_dynamic_table($1, 'github_pull_request') p
+            FROM select_from_dynamic_table($1, 'iac_pr_lead_time') p
             WHERE p.result->>'repository_full_name' = $2
               -- Filter out bots
               -- AND (((p.result->>'author')::jsonb)->>'login')::text
@@ -85,6 +85,7 @@ dashboard "iac_metrics" {
               AND (p.result->>'merged_at')::timestamp >= NOW() - CAST($3 AS interval)
               AND p.result->>'created_at' != '' AND p.result->>'merged_at' != ''
               AND p.result->>'created_at' != '<nil>' AND p.result->>'merged_at' != '<nil>'
+              AND p.result->>'title' != 'Version Packages'
         ),
         min_date AS (
             SELECT MIN(date) AS first_date FROM time_series
@@ -126,21 +127,29 @@ dashboard "iac_metrics" {
                   - (p.result->>'created_at')::timestamp
                 )) / 86400 AS lead_time_days,
                 ROW_NUMBER() OVER (ORDER BY (p.result->>'created_at')::date) AS x
-            FROM select_from_dynamic_table($1, 'github_pull_request') p
+            FROM select_from_dynamic_table($1, 'iac_pr_lead_time') p
             WHERE p.result->>'repository_full_name' = $2
               AND (p.result->>'merged_at')::timestamp >= NOW() - CAST($3 AS interval)
               AND p.result->>'created_at' != '' AND p.result->>'merged_at' != ''
               AND p.result->>'created_at' != '<nil>' AND p.result->>'merged_at' != '<nil>'
+              AND p.result->>'title' != 'Version Packages'
         ),
         stats AS (
             SELECT
                 COUNT(*) AS n,
                 AVG(x) AS x_avg,
-                AVG(lead_time_days) AS y_avg,
-                SUM((x - (SELECT AVG(x) FROM pr_lead_times)) * 
-                    (lead_time_days - (SELECT AVG(lead_time_days) FROM pr_lead_times))) AS numerator,
-                SUM(POWER(x - (SELECT AVG(x) FROM pr_lead_times), 2)) AS denominator
+                AVG(lead_time_days) AS y_avg
             FROM pr_lead_times
+        ),
+        deviations AS (
+            SELECT
+                SUM((p.x - s.x_avg) * (p.lead_time_days - s.y_avg)) AS numerator,
+                SUM(POWER(p.x - s.x_avg, 2)) AS denominator,
+                s.x_avg,
+                s.y_avg
+            FROM pr_lead_times p
+            CROSS JOIN stats s
+            GROUP BY s.x_avg, s.y_avg
         ),
         regression AS (
             SELECT
@@ -152,7 +161,7 @@ dashboard "iac_metrics" {
                     WHEN denominator != 0 THEN numerator / denominator 
                     ELSE 0 
                 END * x_avg) AS intercept
-            FROM stats
+            FROM deviations
         )
         SELECT 
             p.created_date AS date,
@@ -196,6 +205,7 @@ dashboard "iac_metrics" {
             AND (p.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
             AND p.result->>'created_at' != '' 
             AND p.result->>'created_at' != '<nil>'
+            AND p.result->>'title' != 'Version Packages'
           GROUP BY 
             DATE((p.result->>'created_at')::timestamp),
             CASE
@@ -236,6 +246,7 @@ dashboard "iac_metrics" {
           AND (p.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
           AND p.result->>'created_at' != '' 
           AND p.result->>'created_at' != '<nil>'
+          AND p.result->>'title' != 'Version Packages'
         GROUP BY 
           DATE_TRUNC('week', (p.result->>'created_at')::timestamp)::date
         ORDER BY 
