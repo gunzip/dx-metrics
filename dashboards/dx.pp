@@ -73,62 +73,6 @@ dashboard "dx_metrics" {
     args = [self.input.time_interval_days.value]
   }
 
-  /* 
-  chart {
-    title = "IO-Infra size per month"
-    type  = "column"
-    width = 12
-    
-    sql = <<EOQ
-      with months as (
-          select
-              date_trunc('month', d) as start_date,
-              date_trunc('month', d) + interval '1 month - 1 day' as end_date
-          from (
-              select generate_series(
-                 current_date - ($1 * INTERVAL '1 day'),
-                  -- (select created_at from github_Repository where full_name = 'pagopa/io-infra'),
-                  current_date,
-                  '1 month'
-              ) as d
-          ) as dates
-      ),
-      last_commits_per_month as (
-          select
-              m.start_date,
-              c.sha
-          from
-              months m,
-              lateral (
-                  select
-                      sha
-                  from
-                      github_COMMIT
-                  where
-                      repository_full_name = 'pagopa/io-infra'
-                      and authored_date <= m.end_date
-                  order by
-                      authored_date desc,
-                      sha desc
-                  limit 1
-              ) c
-      )
-      select
-          start_date,
-          sum(size::int) as total_size
-      from
-          github_tree left join last_commits_per_month l on tree_sha=l.sha
-      where
-          repository_full_name = 'pagopa/io-infra'
-          and recursive = true and tree_sha=l.sha
-      group by
-          start_date order by l.start_date asc;
-    EOQ
-
-    args = [self.input.time_interval_days.value]
-  }
-  */
-
   chart {
     type = "column"
     title = "DX Members Commits on Non DX Repositories"

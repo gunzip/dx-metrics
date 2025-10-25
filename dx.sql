@@ -9,7 +9,8 @@ BEGIN
       SELECT 
         trim(both ''"'' from trim(unnest(string_to_array(
           regexp_replace(
-            (SELECT content->>''dx_team_members'' FROM config.yml_file),
+            (SELECT content->>''dx_team_members'' FROM config.yml_file 
+              WHERE content->>''dx_team_members'' IS NOT NULL),
             ''[\[\]]'', '''', ''g''
           ), 
           '',''
