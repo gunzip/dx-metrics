@@ -73,6 +73,7 @@ dashboard "workflow_metrics" {
             OR POSITION('apply' IN LOWER(w.result->>'name')) > 0)
           AND TRIM(wr.result->>'conclusion') = 'success'
           AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
+          AND w.result->>'name' != 'Labeler'
         GROUP BY 
           DATE_TRUNC('week', (wr.result->>'created_at')::timestamp)
         ORDER BY 
@@ -115,6 +116,7 @@ dashboard "workflow_metrics" {
             w.result->>'repository_full_name' = $2
             AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
             AND w.result->>'name' != 'CodeQL'
+            AND w.result->>'name' != 'Labeler'
           GROUP BY 
             DATE((wr.result->>'created_at')::timestamp),
             CASE
@@ -159,6 +161,7 @@ dashboard "workflow_metrics" {
           AND TRIM(wr.result->>'conclusion') = 'failure'
           AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
           AND w.result->>'name' != 'CodeQL'
+          AND w.result->>'name' != 'Labeler'
         GROUP BY 
           workflow_name
         ORDER BY 
@@ -200,6 +203,7 @@ dashboard "workflow_metrics" {
           AND (wr.result->>'updated_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
           AND (wr.result->>'updated_at')::timestamp <= CURRENT_DATE
           AND w.result->>'name' != 'CodeQL'
+          AND w.result->>'name' != 'Labeler'
         GROUP BY
           workflow_name
         ORDER BY
@@ -240,6 +244,7 @@ dashboard "workflow_metrics" {
           AND (wr.result->>'updated_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
           AND (wr.result->>'updated_at')::timestamp <= CURRENT_DATE
           AND w.result->>'name' != 'CodeQL'
+          AND w.result->>'name' != 'Labeler'
         GROUP BY
           workflow_name
         ORDER BY
@@ -281,6 +286,7 @@ dashboard "workflow_metrics" {
           AND (wr.result->>'updated_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
           AND (wr.result->>'updated_at')::timestamp <= CURRENT_DATE
           AND w.result->>'name' != 'CodeQL'
+          AND w.result->>'name' != 'Labeler'
         GROUP BY
           workflow_name
         ORDER BY
@@ -320,6 +326,7 @@ dashboard "workflow_metrics" {
           AND (wr.result->>'created_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
           AND (wr.result->>'created_at')::timestamp <= CURRENT_DATE
           AND POSITION('infra_plan.yaml' IN w.result->>'pipeline') > 0
+          AND w.result->>'name' != 'Labeler'
         ORDER BY
           run_timestamp ASC;
 
@@ -357,6 +364,7 @@ dashboard "workflow_metrics" {
           AND (wr.result->>'created_at')::timestamp >= CURRENT_DATE - CAST($3 AS interval)
           AND (wr.result->>'created_at')::timestamp <= CURRENT_DATE
           AND POSITION('infra_apply.yaml' IN w.result->>'pipeline') > 0
+          AND w.result->>'name' != 'Labeler'
         ORDER BY
           run_timestamp ASC;
 
@@ -393,6 +401,7 @@ dashboard "workflow_metrics" {
         WHERE wr.result->>'repository_full_name' = $2
         AND (wr.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
         AND w.result->>'name' != 'CodeQL'
+        AND w.result->>'name' != 'Labeler'
         GROUP BY w.result->>'name'
         ORDER BY total_runs DESC;
       EOQ
