@@ -94,7 +94,7 @@ dashboard "dx_requests_metrics" {
   }
 
   chart {
-    title = "DX Requests Frequency Trend (Linear Regression)"
+    title = "DX Requests Frequency Trend (trend)"
     type = "line"
     width = 12
 

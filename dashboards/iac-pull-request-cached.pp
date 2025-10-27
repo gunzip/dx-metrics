@@ -114,7 +114,7 @@ dashboard "iac_metrics" {
     }
 
     chart {
-      title = "IaC PR Lead Time (linear regression)"
+      title = "IaC PR Lead Time (trend)"
       type  = "line"
       width = 6
 

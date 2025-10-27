@@ -113,7 +113,7 @@ dashboard "github_repository_metrics" {
     }
 
     chart {
-      title = "Merged PR Lead Time (linear regression)"
+      title = "Merged PR Lead Time (trend)"
       type  = "line"
       width = 6
 
