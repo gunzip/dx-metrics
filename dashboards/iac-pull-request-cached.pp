@@ -53,7 +53,7 @@ dashboard "iac_metrics" {
 
   container {
     chart {
-      title = "IaC PR Cycle Time (moving average)"
+      title = "IaC PR Lead Time (moving average)"
       type  = "line"
       width = 6
 
@@ -109,12 +109,12 @@ dashboard "iac_metrics" {
               self.input.time_interval.value]
       
       series "rolling_lead_time_days" {
-        title = "Cycle Time"
+        title = "Lead Time"
       }
     }
 
     chart {
-      title = "IaC PR Cycle Time (linear regression)"
+      title = "IaC PR Lead Time (linear regression)"
       type  = "line"
       width = 6
 
@@ -304,7 +304,7 @@ dashboard "iac_metrics" {
                 merged_at::timestamp - created_at::timestamp
               )) / 86400
             END
-          )::numeric, 2) AS avg_cycle_time_days
+          )::numeric, 2) AS avg_lead_time_days
         FROM 
           pr_reviewers
         WHERE

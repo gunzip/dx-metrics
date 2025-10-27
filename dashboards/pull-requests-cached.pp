@@ -53,7 +53,7 @@ dashboard "github_repository_metrics" {
 
   container {
     chart {
-      title = "Merged PR Cycle Time (moving average)"
+      title = "Merged PR Lead Time (moving average)"
       type  = "line"
       width = 6
 
@@ -108,12 +108,12 @@ dashboard "github_repository_metrics" {
               self.input.time_interval.value]
       
       series "rolling_lead_time_days" {
-        title = "Cycle Time"
+        title = "Lead Time"
       }
     }
 
     chart {
-      title = "Merged PR Cycle Time (linear regression)"
+      title = "Merged PR Lead Time (linear regression)"
       type  = "line"
       width = 6
 
@@ -564,7 +564,7 @@ dashboard "github_repository_metrics" {
               self.input.time_interval.value]
       
       series "rolling_lead_time_days" {
-        title = "Cycle Time"
+        title = "Lead Time"
       }
     }
 
