@@ -262,4 +262,66 @@ dashboard "iac_metrics" {
       }
     }
   }
+
+  container {
+    table {
+      title = "IaC PRs by Reviewer"
+      width = 12
+
+      sql = <<EOQ
+        WITH pr_reviewers AS (
+          SELECT 
+            p.result->>'repository_full_name' AS repository_full_name,
+            p.result->>'created_at' AS created_at,
+            p.result->>'merged_at' AS merged_at,
+            p.result->>'title' AS title,
+            TRIM(reviewer.value::text, '"') AS reviewer
+          FROM 
+            select_from_dynamic_table($1, 'iac_pr_lead_time') p,
+            jsonb_array_elements(
+              CASE 
+                WHEN p.result->>'target_authors' = '' THEN '[]'::jsonb
+                ELSE ('["' || REPLACE(p.result->>'target_authors', ', ', '","') || '"]')::jsonb
+              END
+            ) AS reviewer
+          WHERE 
+            p.result->>'repository_full_name' = $2
+            AND (p.result->>'created_at')::timestamp >= NOW() - CAST($3 AS interval)
+            AND p.result->>'created_at' != '' 
+            AND p.result->>'created_at' != '<nil>'
+            AND p.result->>'title' != 'Version Packages'
+            AND TRIM(p.result->>'target_authors') != ''
+        )
+        SELECT 
+          reviewer,
+          COUNT(*) AS total_prs,
+          COUNT(*) FILTER (WHERE merged_at != '' AND merged_at != '<nil>') AS merged_prs,
+          ROUND(AVG(
+            CASE 
+              WHEN merged_at != '' AND merged_at != '<nil>'
+                   AND created_at != '' AND created_at != '<nil>'
+              THEN EXTRACT(EPOCH FROM (
+                merged_at::timestamp - created_at::timestamp
+              )) / 86400
+            END
+          )::numeric, 2) AS avg_cycle_time_days
+        FROM 
+          pr_reviewers
+        WHERE
+          reviewer != 'web-flow'
+        GROUP BY 
+          reviewer
+        ORDER BY 
+          total_prs DESC;
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+      
+      column "reviewer" {
+        wrap = "all"
+      }
+    }
+  }
 }
