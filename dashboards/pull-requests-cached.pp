@@ -52,6 +52,63 @@ dashboard "github_repository_metrics" {
   }
 
   container {
+    card {
+      width = 4
+      sql = <<EOQ
+        SELECT 
+          COUNT(*) AS value,
+          'Total Pull Requests' AS label
+        FROM select_from_dynamic_table($1, 'github_pull_request')
+        WHERE result->>'repository_full_name' = $2
+          AND (NULLIF(result->>'created_at', '<nil>')::timestamp) >= NOW() - CAST($3 AS interval)
+          AND (((result->>'author')::jsonb)->>'login')::text
+            NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+    }
+
+    card {
+      width = 4
+      sql = <<EOQ
+        SELECT 
+          SUM((result->>'total_comments_count')::numeric) AS value,
+          'Total Comments' AS label
+        FROM select_from_dynamic_table($1, 'github_pull_request')
+        WHERE result->>'repository_full_name' = $2
+          AND (NULLIF(result->>'created_at', '<nil>')::timestamp) >= NOW() - CAST($3 AS interval)
+          AND (((result->>'author')::jsonb)->>'login')::text
+            NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+    }
+
+    card {
+      width = 4
+      sql = <<EOQ
+        SELECT 
+          ROUND(
+            SUM((result->>'total_comments_count')::numeric) / 
+            NULLIF(COUNT(*), 0), 2
+          ) AS value,
+          'Comments per PR' AS label
+        FROM select_from_dynamic_table($1, 'github_pull_request')
+        WHERE result->>'repository_full_name' = $2
+          AND (NULLIF(result->>'created_at', '<nil>')::timestamp) >= NOW() - CAST($3 AS interval)
+          AND (((result->>'author')::jsonb)->>'login')::text
+            NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+    }
+
     chart {
       title = "Merged PR Lead Time (moving average)"
       type  = "line"
