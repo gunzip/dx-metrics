@@ -53,7 +53,34 @@ dashboard "github_repository_metrics" {
 
   container {
     card {
-      width = 4
+      width = 3
+      sql = <<EOQ
+        SELECT 
+          ROUND(
+            AVG(
+              EXTRACT(EPOCH FROM (
+                (result->>'merged_at')::timestamp - 
+                (result->>'created_at')::timestamp
+              )) / 86400
+            ), 2
+          ) AS value,
+          'Average Lead Time (days)' AS label
+        FROM select_from_dynamic_table($1, 'github_pull_request')
+        WHERE result->>'repository_full_name' = $2
+          AND (NULLIF(result->>'merged_at', '<nil>')::timestamp) >= NOW() - CAST($3 AS interval)
+          AND result->>'created_at' != '' AND result->>'merged_at' != ''
+          AND result->>'created_at' != '<nil>' AND result->>'merged_at' != '<nil>'
+          AND (((result->>'author')::jsonb)->>'login')::text
+            NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+      EOQ
+
+      args = [self.input.repository.value,
+              with.config.rows[0].repository_full_name,
+              self.input.time_interval.value]
+    }
+
+    card {
+      width = 3
       sql = <<EOQ
         SELECT 
           COUNT(*) AS value,
@@ -71,7 +98,7 @@ dashboard "github_repository_metrics" {
     }
 
     card {
-      width = 4
+      width = 3
       sql = <<EOQ
         SELECT 
           SUM((result->>'total_comments_count')::numeric) AS value,
@@ -89,7 +116,7 @@ dashboard "github_repository_metrics" {
     }
 
     card {
-      width = 4
+      width = 3
       sql = <<EOQ
         SELECT 
           ROUND(
