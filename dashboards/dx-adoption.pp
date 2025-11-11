@@ -18,20 +18,6 @@ dashboard "dx_adoption_metrics" {
     EOQ
   }
 
-  input "time_interval" {
-    title = "Time Interval"
-    width = 6
-    option "30 days" {}
-    option "60 days" {}
-    option "120 days" {}
-    option "240 days" {}
-    option "300 days" {}
-    option "360 days" {}
-    option "720 days" {}
-    option "1080 days" {}
-    option "1440 days" {}
-  }
-
   with "config" {
     sql = <<-EOQ
       SELECT

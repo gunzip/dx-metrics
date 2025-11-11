@@ -221,11 +221,13 @@ dashboard "iac_metrics" {
               with.config.rows[0].repository_full_name,
               self.input.time_interval.value]
       
-      series "supervised_count" {
+      series "Supervised PRs" {
         title = "Supervised PRs"
+        color = "red"
       }
-      series "unsupervised_count" {
+      series "Unsupervised PRs" {
         title = "Unsupervised PRs"
+        color = "green"
       }
     }
 

@@ -15,6 +15,9 @@ repositories:
   - "developer-portal"
   - "interop-be-monorepo"
   - "selfcare"
+  - "plsm-service-management"
+  - "selfcare-infra"
+  - "b2b-portals"
 #  - "selfcare-onboarding"
 dx_team_members:
   - gunzip
