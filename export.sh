@@ -9,6 +9,10 @@ fi
 
 CONFIG_FILE="${1:-config.yaml}"
 
+# Retry configuration
+MAX_RETRIES=3
+INITIAL_DELAY=5
+
 # Check if yq is installed
 if ! command -v yq &> /dev/null; then
     echo "yq is required but not installed. Please install it first."
@@ -29,12 +33,37 @@ export_workflow_run_table() {
     return
   fi
 
-  echo "Exporting workflow runs for repository ${repository_full_name} to ${output_file}"
+  local retry_count=0
+  local delay=$INITIAL_DELAY
 
-  steampipe_export_github github_actions_repository_workflow_run \
-    --where "repository_full_name='${repository_full_name}'" \
-    --select created_at,repository_full_name,conclusion,updated_at,status,id,workflow_id  \
-    | tee "${output_file}"
+  while [ $retry_count -lt $MAX_RETRIES ]; do
+    echo "Exporting workflow runs for repository ${repository_full_name} to ${output_file} (attempt $((retry_count + 1))/${MAX_RETRIES})"
+
+    steampipe_export_github github_actions_repository_workflow_run \
+      --where "repository_full_name='${repository_full_name}'" \
+      --select created_at,repository_full_name,conclusion,updated_at,status,id,workflow_id  \
+      | tee "${output_file}"
+    
+    # Check if the export succeeded
+    if [ $? -eq 0 ] && [ -s "${output_file}" ]; then
+      echo "✓ Successfully exported workflow runs for ${repository_full_name}"
+      return 0
+    fi
+
+    # Export failed, clean up and retry
+    echo "⚠ Export failed for ${repository_full_name} workflow runs."
+    rm -f "${output_file}"
+    
+    retry_count=$((retry_count + 1))
+    if [ $retry_count -lt $MAX_RETRIES ]; then
+      echo "Retrying in ${delay} seconds..."
+      sleep $delay
+      delay=$((delay * 2))  # Exponential backoff
+    fi
+  done
+
+  echo "✗ Failed to export workflow runs for ${repository_full_name} after ${MAX_RETRIES} attempts"
+  return 1
 }
 
 export_workflow_table() {
@@ -47,12 +76,37 @@ export_workflow_table() {
     return
   fi
 
-  echo "Exporting workflows for repository ${repository_full_name} to ${output_file}"
+  local retry_count=0
+  local delay=$INITIAL_DELAY
 
-  steampipe_export_github github_workflow \
-    --where "repository_full_name='${repository_full_name}'" \
-    --select id,name,repository_full_name,pipeline  \
-    | tee "${output_file}"
+  while [ $retry_count -lt $MAX_RETRIES ]; do
+    echo "Exporting workflows for repository ${repository_full_name} to ${output_file} (attempt $((retry_count + 1))/${MAX_RETRIES})"
+
+    steampipe_export_github github_workflow \
+      --where "repository_full_name='${repository_full_name}'" \
+      --select id,name,repository_full_name,pipeline  \
+      | tee "${output_file}"
+    
+    # Check if the export succeeded
+    if [ $? -eq 0 ] && [ -s "${output_file}" ]; then
+      echo "✓ Successfully exported workflows for ${repository_full_name}"
+      return 0
+    fi
+
+    # Export failed, clean up and retry
+    echo "⚠ Export failed for ${repository_full_name} workflows."
+    rm -f "${output_file}"
+    
+    retry_count=$((retry_count + 1))
+    if [ $retry_count -lt $MAX_RETRIES ]; then
+      echo "Retrying in ${delay} seconds..."
+      sleep $delay
+      delay=$((delay * 2))  # Exponential backoff
+    fi
+  done
+
+  echo "✗ Failed to export workflows for ${repository_full_name} after ${MAX_RETRIES} attempts"
+  return 1
 }
 
 export_pull_request_table() {
@@ -65,12 +119,37 @@ export_pull_request_table() {
     return
   fi
 
-  echo "Exporting pull requests for repository ${repository_full_name} to ${output_file}"
+  local retry_count=0
+  local delay=$INITIAL_DELAY
 
-  steampipe_export_github github_pull_request \
-    --where "repository_full_name='${repository_full_name}'" \
-    --select repository_full_name,title,number,review_decision,created_at,closed_at,merged_at,merged_by,author,additions,total_comments_count  \
-    | tee "${output_file}"
+  while [ $retry_count -lt $MAX_RETRIES ]; do
+    echo "Exporting pull requests for repository ${repository_full_name} to ${output_file} (attempt $((retry_count + 1))/${MAX_RETRIES})"
+
+    steampipe_export_github github_pull_request \
+      --where "repository_full_name='${repository_full_name}'" \
+      --select repository_full_name,title,number,review_decision,created_at,closed_at,merged_at,merged_by,author,additions,total_comments_count  \
+      | tee "${output_file}"
+    
+    # Check if the export succeeded
+    if [ $? -eq 0 ] && [ -s "${output_file}" ]; then
+      echo "✓ Successfully exported pull requests for ${repository_full_name}"
+      return 0
+    fi
+
+    # Export failed, clean up and retry
+    echo "⚠ Export failed for ${repository_full_name} pull requests."
+    rm -f "${output_file}"
+    
+    retry_count=$((retry_count + 1))
+    if [ $retry_count -lt $MAX_RETRIES ]; then
+      echo "Retrying in ${delay} seconds..."
+      sleep $delay
+      delay=$((delay * 2))  # Exponential backoff
+    fi
+  done
+
+  echo "✗ Failed to export pull requests for ${repository_full_name} after ${MAX_RETRIES} attempts"
+  return 1
 }
 
 # Create output directory if it doesn't exist
