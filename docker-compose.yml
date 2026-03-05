@@ -15,26 +15,5 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
-    build:
-      context: ./nextapp
-      dockerfile: Dockerfile
-      target: dev
-    ports:
-      - "8080:3000"
-    environment:
-      DATABASE_URL: postgresql://dxmetrics:dxmetrics@db:5432/dxmetrics
-      GITHUB_TOKEN: ${GITHUB_TOKEN}
-      AUTH_SECRET: "local-dev-secret-not-for-production"
-      AUTH_GITHUB_ID: ${AUTH_GITHUB_ID:-unused}
-      AUTH_GITHUB_SECRET: ${AUTH_GITHUB_SECRET:-unused}
-      AUTH_TRUST_HOST: "true"
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:8080}
-      SKIP_AUTH: "true"
-      NODE_ENV: development
-    depends_on:
-      db:
-        condition: service_healthy
-
 volumes:
   pgdata:
