@@ -737,7 +737,10 @@ async function importTerraformModules(repoName: string) {
 
   let output: TerrawizOutput = { modules: [] };
 
-  const tmpFile = path.join(os.tmpdir(), `terrawiz-${repoName}-${Date.now()}.json`);
+  const tmpFile = path.join(
+    os.tmpdir(),
+    `terrawiz-${repoName}-${Date.now()}.json`,
+  );
   try {
     execSync(
       `npx --yes terrawiz scan github:${fullName} -f json -e ${tmpFile}`,
@@ -753,7 +756,11 @@ async function importTerraformModules(repoName: string) {
     console.log(`    ⚠ terrawiz failed for ${fullName}: ${e}`);
     return;
   } finally {
-    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+    try {
+      fs.unlinkSync(tmpFile);
+    } catch {
+      /* ignore */
+    }
   }
 
   const modules = output.modules ?? [];
