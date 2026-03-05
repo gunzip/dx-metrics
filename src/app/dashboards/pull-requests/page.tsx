@@ -25,7 +25,11 @@ interface PrDashboardData {
   cumulatedNewPrs: { date: string; cumulative_count: number }[];
   prSize: { day: string; rolling_avg_additions: number }[];
   prComments: { day: string; rolling_avg_comments: number }[];
-  prSizeDistribution: { size_range: string; pr_count: number }[];
+  prSizeDistribution: {
+    size_range: string;
+    pr_count: number;
+    avg_additions: number;
+  }[];
   slowestPrs: {
     title: string;
     lead_time_days: number;
@@ -153,10 +157,16 @@ export default function PullRequestsDashboard() {
               ]}
             />
             <SimpleBarChart
-              title="Pull Requests Size (additions)"
+              title="Pull Requests Size (avg additions)"
               data={data.prSizeDistribution}
               xKey="size_range"
-              bars={[{ key: "pr_count", name: "PR Count", color: "#2196F3" }]}
+              bars={[
+                {
+                  key: "avg_additions",
+                  name: "Avg Additions",
+                  color: "#2196F3",
+                },
+              ]}
             />
           </div>
 

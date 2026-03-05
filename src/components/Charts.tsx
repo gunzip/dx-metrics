@@ -45,7 +45,9 @@ export function ChartWrapper({
       className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}
     >
       <h3 className="mb-4 text-sm font-medium text-gray-700">{title}</h3>
-      <div className="h-72">{children}</div>
+      <div className="w-full" style={{ height: "288px", overflow: "hidden" }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -71,25 +73,29 @@ export function SimpleLineChart({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
-          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="#6b7280" />
+          <YAxis tick={{ fontSize: 11 }} stroke="#6b7280" />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: "6px",
+            }}
           />
-          <Tooltip />
-          <Legend />
+          <Legend wrapperStyle={{ paddingTop: "10px" }} />
           {lines.map((line, i) => (
             <Line
               key={line.key}
-              type="monotone"
+              type="linear"
               dataKey={line.key}
               name={line.name}
               stroke={line.color || COLORS[i % COLORS.length]}
-              dot={false}
               strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
             />
           ))}
         </LineChart>
@@ -116,36 +122,49 @@ export function SimpleBarChart({
   className,
   layout = "horizontal",
 }: SimpleBarChartProps) {
+  const isVertical = layout === "vertical";
+
   return (
     <ChartWrapper title={title} className={className}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
-          layout={layout === "vertical" ? "vertical" : "horizontal"}
-          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+          layout={isVertical ? "vertical" : "horizontal"}
+          margin={{
+            top: 10,
+            right: 30,
+            left: 10,
+            bottom: isVertical ? 10 : 20,
+          }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
-          {layout === "vertical" ? (
-            <>
-              <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis
-                dataKey={xKey}
-                type="category"
-                tick={{ fontSize: 11 }}
-                width={120}
-              />
-            </>
-          ) : (
-            <>
-              <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-              <YAxis
-                tick={{ fontSize: 11 }}
-                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
-              />
-            </>
-          )}
-          <Tooltip />
-          <Legend />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <XAxis
+            dataKey={isVertical ? undefined : xKey}
+            type={isVertical ? "number" : "category"}
+            tick={{ fontSize: isVertical ? 11 : 9 }}
+            stroke="#6b7280"
+            {...(!isVertical && {
+              interval: Math.max(0, Math.floor(data.length / 8) - 1),
+              angle: data.length > 8 ? -45 : 0,
+              textAnchor: data.length > 8 ? "end" : "middle",
+              height: data.length > 8 ? 60 : 30,
+            })}
+          />
+          <YAxis
+            dataKey={isVertical ? xKey : undefined}
+            type={isVertical ? "category" : undefined}
+            tick={{ fontSize: 11 }}
+            stroke="#6b7280"
+            {...(isVertical && { width: 120 })}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: "6px",
+            }}
+          />
+          <Legend wrapperStyle={{ paddingTop: "10px" }} />
           {bars.map((bar, i) => (
             <Bar
               key={bar.key}
@@ -192,7 +211,13 @@ export function SimplePieChart({
               <Cell key={i} fill={COLORS[i % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: "6px",
+            }}
+          />
         </PieChart>
       </ResponsiveContainer>
     </ChartWrapper>

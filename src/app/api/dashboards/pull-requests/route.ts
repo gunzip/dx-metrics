@@ -94,12 +94,15 @@ export async function GET(req: NextRequest) {
     const mergedPrs = await db.execute(sql`
       WITH date_series AS (
         SELECT generate_series(
-          (NOW() - MAKE_INTERVAL(days => ${days}))::date, CURRENT_DATE,
-          CASE WHEN ${days} < 240 THEN '1 day'::interval ELSE '7 days'::interval END
+          CASE WHEN ${days} <= 60 THEN (NOW() - MAKE_INTERVAL(days => ${days}))::date
+               ELSE date_trunc('week', (NOW() - MAKE_INTERVAL(days => ${days}))::date)::date END,
+          CASE WHEN ${days} <= 60 THEN CURRENT_DATE
+               ELSE date_trunc('week', CURRENT_DATE)::date END,
+          CASE WHEN ${days} <= 60 THEN '1 day'::interval ELSE '7 days'::interval END
         )::date AS date
       ),
       pr_counts AS (
-        SELECT CASE WHEN ${days} < 240 THEN pr.merged_at::date
+        SELECT CASE WHEN ${days} <= 60 THEN pr.merged_at::date
           ELSE date_trunc('week', pr.merged_at)::date END AS pr_date,
           COUNT(*) AS pr_count
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
@@ -134,12 +137,15 @@ export async function GET(req: NextRequest) {
     const newPrs = await db.execute(sql`
       WITH date_series AS (
         SELECT generate_series(
-          (NOW() - MAKE_INTERVAL(days => ${days}))::date, CURRENT_DATE,
-          CASE WHEN ${days} < 240 THEN '1 day'::interval ELSE '7 days'::interval END
+          CASE WHEN ${days} <= 60 THEN (NOW() - MAKE_INTERVAL(days => ${days}))::date
+               ELSE date_trunc('week', (NOW() - MAKE_INTERVAL(days => ${days}))::date)::date END,
+          CASE WHEN ${days} <= 60 THEN CURRENT_DATE
+               ELSE date_trunc('week', CURRENT_DATE)::date END,
+          CASE WHEN ${days} <= 60 THEN '1 day'::interval ELSE '7 days'::interval END
         )::date AS date
       ),
       pr_counts AS (
-        SELECT CASE WHEN ${days} < 240 THEN pr.created_at::date
+        SELECT CASE WHEN ${days} <= 60 THEN pr.created_at::date
           ELSE date_trunc('week', pr.created_at)::date END AS pr_date,
           COUNT(*) AS pr_count
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
@@ -185,16 +191,20 @@ export async function GET(req: NextRequest) {
 
     const prSizeDistribution = await db.execute(sql`
       WITH bucketed AS (
-        SELECT CASE WHEN additions <= 50 THEN '1 - 50' WHEN additions <= 200 THEN '50 - 200'
-          WHEN additions <= 500 THEN '200 - 500' WHEN additions <= 1000 THEN '500 - 1000'
-          ELSE '> 1000' END AS size_range
+        SELECT pr.additions,
+          CASE WHEN additions <= 50 THEN '0-50' WHEN additions <= 200 THEN '51-200'
+          WHEN additions <= 500 THEN '201-500' WHEN additions <= 1000 THEN '501-1000'
+          ELSE '1000+' END AS size_range,
+          CASE WHEN additions <= 50 THEN 1 WHEN additions <= 200 THEN 2
+          WHEN additions <= 500 THEN 3 WHEN additions <= 1000 THEN 4
+          ELSE 5 END AS sort_order
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
         WHERE r.full_name = ${fullName}
           AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days}) AND pr.additions IS NOT NULL
       )
-      SELECT size_range, COUNT(*) AS pr_count FROM bucketed GROUP BY size_range
-      ORDER BY CASE WHEN size_range = '1 - 50' THEN 1 WHEN size_range = '50 - 200' THEN 2
-        WHEN size_range = '200 - 500' THEN 3 WHEN size_range = '500 - 1000' THEN 4 ELSE 5 END
+      SELECT size_range, COUNT(*) AS pr_count, ROUND(AVG(additions)::numeric, 0) AS avg_additions
+      FROM bucketed GROUP BY size_range, sort_order
+      ORDER BY sort_order
     `);
 
     const slowestPrs = await db.execute(sql`
@@ -208,23 +218,43 @@ export async function GET(req: NextRequest) {
       ORDER BY lead_time_days DESC LIMIT 50
     `);
 
+    // Helper: convert string numeric values to numbers for Recharts compatibility
+    // PostgreSQL returns COUNT/SUM/ROUND as strings through the pg driver
+    function numericRows<T extends Record<string, unknown>>(
+      rows: T[],
+      keys: string[],
+    ): T[] {
+      return rows.map((row) => {
+        const out = { ...row };
+        for (const k of keys) {
+          if (out[k] != null) out[k] = Number(out[k]) as T[string];
+        }
+        return out;
+      });
+    }
+
     return NextResponse.json({
       cards: {
-        avgLeadTime: avgLeadTime.rows[0]?.value,
-        totalPrs: totalPrs.rows[0]?.value,
-        totalComments: totalComments.rows[0]?.value,
-        commentsPerPr: commentsPerPr.rows[0]?.value,
+        avgLeadTime: Number(avgLeadTime.rows[0]?.value) || null,
+        totalPrs: Number(totalPrs.rows[0]?.value) || null,
+        totalComments: Number(totalComments.rows[0]?.value) || null,
+        commentsPerPr: Number(commentsPerPr.rows[0]?.value) || null,
       },
-      leadTimeMovingAvg: leadTimeMovingAvg.rows,
-      leadTimeTrend: leadTimeTrend.rows,
-      mergedPrs: mergedPrs.rows,
-      unmergedPrs: unmergedPrs.rows,
-      newPrs: newPrs.rows,
-      cumulatedNewPrs: cumulatedNewPrs.rows,
-      prSize: prSize.rows,
-      prComments: prComments.rows,
-      prSizeDistribution: prSizeDistribution.rows,
-      slowestPrs: slowestPrs.rows,
+      leadTimeMovingAvg: numericRows(leadTimeMovingAvg.rows, [
+        "rolling_lead_time_days",
+      ]),
+      leadTimeTrend: numericRows(leadTimeTrend.rows, ["trend_line"]),
+      mergedPrs: numericRows(mergedPrs.rows, ["pr_count"]),
+      unmergedPrs: numericRows(unmergedPrs.rows, ["open_prs"]),
+      newPrs: numericRows(newPrs.rows, ["pr_count"]),
+      cumulatedNewPrs: numericRows(cumulatedNewPrs.rows, ["cumulative_count"]),
+      prSize: numericRows(prSize.rows, ["rolling_avg_additions"]),
+      prComments: numericRows(prComments.rows, ["rolling_avg_comments"]),
+      prSizeDistribution: numericRows(prSizeDistribution.rows, [
+        "pr_count",
+        "avg_additions",
+      ]),
+      slowestPrs: numericRows(slowestPrs.rows, ["lead_time_days"]),
     });
   } catch (error) {
     console.error("PR dashboard error:", error);

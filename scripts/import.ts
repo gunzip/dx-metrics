@@ -244,8 +244,7 @@ async function importPullRequests(repoName: string, since: string) {
         mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
         mergedBy: null,
         additions: null,
-        totalCommentsCount:
-          ((pr as Record<string, unknown>).comments as number) || 0,
+        totalCommentsCount: null,
       })
       .onConflictDoUpdate({
         target: schema.pullRequests.id,
@@ -253,8 +252,6 @@ async function importPullRequests(repoName: string, since: string) {
           title: pr.title,
           closedAt: pr.closed_at ? new Date(pr.closed_at) : null,
           mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
-          totalCommentsCount:
-            ((pr as Record<string, unknown>).comments as number) || 0,
         },
       });
     count++;
@@ -265,13 +262,14 @@ async function importPullRequests(repoName: string, since: string) {
   if (count > 0)
     process.stdout.write(`\r    Imported: ${count}/${filtered.length}\n`);
 
-  // Fetch additions for merged PRs that are missing it
+  // Fetch additions and comments for PRs that are missing them
   const prsNeedingDetails = await db
     .select()
     .from(schema.pullRequests)
     .where(
       sql`${schema.pullRequests.repositoryId} = ${repoId}
-          AND ${schema.pullRequests.additions} IS NULL
+          AND (${schema.pullRequests.additions} IS NULL
+               OR ${schema.pullRequests.totalCommentsCount} IS NULL)
           AND ${schema.pullRequests.createdAt} >= ${since}`,
     );
 
@@ -292,6 +290,8 @@ async function importPullRequests(repoName: string, since: string) {
           additions: detail.additions,
           mergedBy: detail.merged_by?.login || null,
           reviewDecision: null,
+          totalCommentsCount:
+            (detail.comments || 0) + (detail.review_comments || 0),
         })
         .where(sql`${schema.pullRequests.id} = ${pr.id}`);
       detailsCount++;
