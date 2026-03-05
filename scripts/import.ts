@@ -903,9 +903,26 @@ async function importTrackerCsv(csvPath: string) {
   }
 
   // Parse header
-  const headers = lines[0]
-    .split(",")
-    .map((h) => h.trim().replace(/^"|"$/g, ""));
+  const splitCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === "," && !inQuotes) {
+        result.push(current.trim().replace(/^"|"$/g, ""));
+        current = "";
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim().replace(/^"|"$/g, ""));
+    return result;
+  };
+
+  const headers = splitCSVLine(lines[0]);
 
   // Find column indices
   const submittedIdx = headers.findIndex((h) =>
@@ -926,10 +943,18 @@ async function importTrackerCsv(csvPath: string) {
 
   let count = 0;
   for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
+    const cols = splitCSVLine(lines[i]);
 
-    const rawSubmitted = submittedIdx >= 0 ? cols[submittedIdx] : "";
-    const rawClosed = closedIdx >= 0 ? cols[closedIdx] : "";
+    const rawSubmitted =
+      submittedIdx >= 0 &&
+      cols[submittedIdx] &&
+      cols[submittedIdx] !== "undefined"
+        ? cols[submittedIdx]
+        : "";
+    const rawClosed =
+      closedIdx >= 0 && cols[closedIdx] && cols[closedIdx] !== "undefined"
+        ? cols[closedIdx]
+        : "";
     const category = categoryIdx >= 0 ? cols[categoryIdx] : "";
     const priority = priorityIdx >= 0 ? cols[priorityIdx] : "";
 
@@ -941,7 +966,7 @@ async function importTrackerCsv(csvPath: string) {
       // Format: DD/MM/YY, HH:MI or YYYY-MM-DD
       try {
         const match = rawSubmitted.match(
-          /(\d{2})\/(\d{2})\/(\d{2}),?\s*(\d{2}):(\d{2})/,
+          /^(\d{1,2})\/(\d{1,2})\/(\d{2}),?\s*(\d{1,2}):(\d{1,2})$/,
         );
         if (match) {
           const [, d, m, y, h, min] = match;
@@ -952,8 +977,11 @@ async function importTrackerCsv(csvPath: string) {
             parseInt(h),
             parseInt(min),
           );
-        } else {
-          submittedAt = new Date(rawSubmitted);
+        } else if (rawSubmitted.match(/^\d{4}-\d{2}-\d{2}/)) {
+          const d = new Date(rawSubmitted);
+          if (!isNaN(d.getTime())) {
+            submittedAt = d;
+          }
         }
       } catch {
         // skip
@@ -962,7 +990,12 @@ async function importTrackerCsv(csvPath: string) {
 
     if (rawClosed) {
       try {
-        closedAt = new Date(rawClosed);
+        if (rawClosed.match(/^\d{4}-\d{2}-\d{2}/)) {
+          const d = new Date(rawClosed);
+          if (!isNaN(d.getTime())) {
+            closedAt = d;
+          }
+        }
       } catch {
         // skip
       }
