@@ -19,13 +19,6 @@
     "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0",
     "NX_DAEMON": "true"
   },
-  "forwardPorts": [8080],
-  "portsAttributes": {
-    "8080": {
-      "label": "App Dashboard",
-      "onAutoForward": "notify"
-    }
-  },
   "customizations": {
     "vscode": {
       "extensions": [

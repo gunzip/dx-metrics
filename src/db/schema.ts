@@ -41,7 +41,7 @@ export const pullRequests = pgTable(
     uniqueIndex("pr_repo_number_idx").on(t.repositoryId, t.number),
     index("pr_created_at_idx").on(t.createdAt),
     index("pr_merged_at_idx").on(t.mergedAt),
-  ]
+  ],
 );
 
 // --- Workflows ---
@@ -55,7 +55,7 @@ export const workflows = pgTable(
     name: text("name").notNull(),
     pipeline: text("pipeline"),
   },
-  (t) => [index("wf_repo_idx").on(t.repositoryId)]
+  (t) => [index("wf_repo_idx").on(t.repositoryId)],
 );
 
 // --- Workflow Runs ---
@@ -78,7 +78,7 @@ export const workflowRuns = pgTable(
     index("wr_repo_idx").on(t.repositoryId),
     index("wr_created_at_idx").on(t.createdAt),
     index("wr_workflow_idx").on(t.workflowId),
-  ]
+  ],
 );
 
 // --- IaC PR Lead Times ---
@@ -101,7 +101,7 @@ export const iacPrLeadTimes = pgTable(
   (t) => [
     uniqueIndex("iac_pr_repo_number_idx").on(t.repositoryId, t.prNumber),
     index("iac_pr_created_at_idx").on(t.createdAt),
-  ]
+  ],
 );
 
 // --- Commits ---
@@ -122,7 +122,7 @@ export const commits = pgTable(
     index("commit_repo_idx").on(t.repositoryId),
     index("commit_date_idx").on(t.committerDate),
     index("commit_author_idx").on(t.author),
-  ]
+  ],
 );
 
 // --- Code Search Results ---
@@ -139,9 +139,9 @@ export const codeSearchResults = pgTable(
     uniqueIndex("code_search_query_repo_path_idx").on(
       t.query,
       t.repositoryFullName,
-      t.path
+      t.path,
     ),
-  ]
+  ],
 );
 
 // --- Terraform Modules ---
@@ -154,8 +154,12 @@ export const terraformModules = pgTable(
     filePath: text("file_path"),
   },
   (t) => [
-    uniqueIndex("tf_mod_repo_module_idx").on(t.repository, t.module, t.filePath),
-  ]
+    uniqueIndex("tf_mod_repo_module_idx").on(
+      t.repository,
+      t.module,
+      t.filePath,
+    ),
+  ],
 );
 
 // --- Terraform Registry Releases ---
@@ -174,9 +178,9 @@ export const terraformRegistryReleases = pgTable(
     uniqueIndex("tf_reg_mod_version_idx").on(
       t.moduleName,
       t.provider,
-      t.majorVersion
+      t.majorVersion,
     ),
-  ]
+  ],
 );
 
 // --- Tracker Requests ---
