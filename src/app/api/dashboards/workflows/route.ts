@@ -2,6 +2,23 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
+// Coerce PostgreSQL numeric strings to JS numbers
+function coerceNumbers<T extends Record<string, unknown>>(rows: T[]): T[] {
+  return rows.map((row) => {
+    const out = { ...row };
+    for (const key of Object.keys(out)) {
+      const v = out[key];
+      if (typeof v === "string" && v !== "" && !isNaN(Number(v))) {
+        // Keep date-like strings as strings
+        if (!/\d{4}-\d{2}-\d{2}/.test(v)) {
+          (out as Record<string, unknown>)[key] = Number(v);
+        }
+      }
+    }
+    return out;
+  });
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const repository = searchParams.get("repository") || "dx";
@@ -161,15 +178,19 @@ export async function GET(req: NextRequest) {
     `);
 
     return NextResponse.json({
-      deployments: deployments.rows,
-      dxVsNonDx: dxVsNonDx.rows,
-      failures: failures.rows,
-      avgDuration: avgDuration.rows,
-      runCount: runCount.rows,
-      cumulativeDuration: cumulativeDuration.rows,
-      infraPlan: infraPlan.rows,
-      infraApply: infraApply.rows,
-      successRatio: successRatio.rows,
+      deployments: coerceNumbers(deployments.rows as Record<string, unknown>[]),
+      dxVsNonDx: coerceNumbers(dxVsNonDx.rows as Record<string, unknown>[]),
+      failures: coerceNumbers(failures.rows as Record<string, unknown>[]),
+      avgDuration: coerceNumbers(avgDuration.rows as Record<string, unknown>[]),
+      runCount: coerceNumbers(runCount.rows as Record<string, unknown>[]),
+      cumulativeDuration: coerceNumbers(
+        cumulativeDuration.rows as Record<string, unknown>[],
+      ),
+      infraPlan: coerceNumbers(infraPlan.rows as Record<string, unknown>[]),
+      infraApply: coerceNumbers(infraApply.rows as Record<string, unknown>[]),
+      successRatio: coerceNumbers(
+        successRatio.rows as Record<string, unknown>[],
+      ),
     });
   } catch (error) {
     console.error("Workflow dashboard error:", error);

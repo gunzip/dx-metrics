@@ -61,10 +61,10 @@ export async function GET(req: NextRequest) {
       SELECT t.date,
         CASE WHEN t.date >= (SELECT MIN(date) FROM time_series) + INTERVAL '7 days'
           THEN ROUND(AVG(p.lead_time_days) FILTER (
-            WHERE p.created_at::date <= t.date AND p.merged_at::date >= t.date - INTERVAL '7 days'
+            WHERE p.merged_at::date BETWEEN t.date - INTERVAL '7 days' AND t.date
           )::numeric, 2)
         END AS rolling_lead_time_days
-      FROM time_series t LEFT JOIN pr_lead_times p ON p.created_at::date <= t.date
+      FROM time_series t LEFT JOIN pr_lead_times p ON p.merged_at::date <= t.date
       GROUP BY t.date ORDER BY t.date
     `);
 
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         FROM pr_lead_times p CROSS JOIN stats s GROUP BY s.x_avg, s.y_avg
       )
       SELECT p.created_date AS date,
-        ROUND((r.slope * p.x + (r.y_avg - r.slope * r.x_avg))::numeric, 2) AS trend_line
+        GREATEST(ROUND((r.slope * p.x + (r.y_avg - r.slope * r.x_avg))::numeric, 2), 0) AS trend_line
       FROM pr_lead_times p CROSS JOIN regression r ORDER BY p.created_date
     `);
 

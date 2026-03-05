@@ -10,6 +10,7 @@ const navItems = [
   { href: "/dashboards/dx-adoption", label: "DX Adoption" },
   { href: "/dashboards/dx-team", label: "DX Team" },
   { href: "/dashboards/tracker", label: "Tracker" },
+  { href: "/dashboards/releases", label: "Releases" },
 ];
 
 export function Sidebar() {

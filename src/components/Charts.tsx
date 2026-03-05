@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   LineChart,
   Line,
@@ -73,7 +74,7 @@ export function SimpleLineChart({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
-          margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+          margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="#6b7280" />
@@ -225,9 +226,18 @@ export function SimplePieChart({
 }
 
 // --- Data Table ---
+interface DataTableColumn {
+  key: string;
+  label: string;
+  renderCell?: (
+    value: unknown,
+    row: Record<string, unknown>,
+  ) => React.ReactNode;
+}
+
 interface DataTableProps {
   title: string;
-  columns: { key: string; label: string }[];
+  columns: DataTableColumn[];
   data: Record<string, unknown>[];
   className?: string;
 }
@@ -238,6 +248,33 @@ export function DataTable({
   data,
   className = "",
 }: DataTableProps) {
+  const [sortKey, setSortKey] = React.useState<string | null>(null);
+  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+
+  const handleSort = (key: string) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sorted = React.useMemo(() => {
+    if (!sortKey) return data;
+    return [...data].sort((a, b) => {
+      const av = a[sortKey] ?? "";
+      const bv = b[sortKey] ?? "";
+      const an = Number(av);
+      const bn = Number(bv);
+      const cmp =
+        !isNaN(an) && !isNaN(bn)
+          ? an - bn
+          : String(av).localeCompare(String(bv));
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [data, sortKey, sortDir]);
+
   return (
     <div
       className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}
@@ -250,19 +287,23 @@ export function DataTable({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-3 py-2 text-left font-medium text-gray-600"
+                  onClick={() => handleSort(col.key)}
+                  className="cursor-pointer select-none px-3 py-2 text-left font-medium text-gray-600 hover:text-gray-900"
                 >
                   {col.label}
+                  {sortKey === col.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
+            {sorted.map((row, i) => (
               <tr key={i} className="border-b border-gray-100">
                 {columns.map((col) => (
                   <td key={col.key} className="px-3 py-2 text-gray-800">
-                    {String(row[col.key] ?? "")}
+                    {col.renderCell
+                      ? col.renderCell(row[col.key], row)
+                      : String(row[col.key] ?? "")}
                   </td>
                 ))}
               </tr>
