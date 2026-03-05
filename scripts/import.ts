@@ -517,10 +517,9 @@ async function importIacPrLeadTime(repoName: string, since: string) {
       createdAt: string;
       mergedAt: string;
       leadTimeDays: number;
-      targetAuthors: string[];
     }
   >();
-  const prAuthorsMap = new Map<number, Set<string>>();
+  const prReviewersMap = new Map<number, Set<string>>();
 
   console.log(`    Analyzing ${allCommits.length} commits...`);
   let processedCommits = 0;
@@ -542,10 +541,11 @@ async function importIacPrLeadTime(repoName: string, since: string) {
     }
 
     for (const pr of prs.data) {
-      if (isTarget && commitAuthor) {
-        if (!prAuthorsMap.has(pr.number))
-          prAuthorsMap.set(pr.number, new Set());
-        prAuthorsMap.get(pr.number)!.add(commitAuthor);
+      // If a DX team member made a commit in this PR, they are a potential reviewer/supervisor
+      if (isTarget && commitAuthor && commitAuthor !== pr.user?.login?.toLowerCase()) {
+        if (!prReviewersMap.has(pr.number))
+          prReviewersMap.set(pr.number, new Set());
+        prReviewersMap.get(pr.number)!.add(commitAuthor);
       }
 
       if (pr.merged_at && !prMap.has(pr.number)) {
@@ -554,12 +554,6 @@ async function importIacPrLeadTime(repoName: string, since: string) {
         const leadTimeDays =
           (mergedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
 
-        const contributing = prAuthorsMap.has(pr.number)
-          ? Array.from(prAuthorsMap.get(pr.number)!).filter(
-              (a) => a !== "web-flow",
-            )
-          : [];
-
         prMap.set(pr.number, {
           number: pr.number,
           title: pr.title,
@@ -567,7 +561,6 @@ async function importIacPrLeadTime(repoName: string, since: string) {
           createdAt: pr.created_at,
           mergedAt: pr.merged_at,
           leadTimeDays,
-          targetAuthors: contributing,
         });
       }
     }
@@ -587,6 +580,10 @@ async function importIacPrLeadTime(repoName: string, since: string) {
 
   let count = 0;
   for (const pr of prMap.values()) {
+    const reviewers = prReviewersMap.has(pr.number)
+      ? Array.from(prReviewersMap.get(pr.number)!).filter((a) => a !== "web-flow")
+      : [];
+
     await db
       .insert(schema.iacPrLeadTimes)
       .values({
@@ -598,7 +595,7 @@ async function importIacPrLeadTime(repoName: string, since: string) {
         createdAt: new Date(pr.createdAt),
         mergedAt: new Date(pr.mergedAt),
         leadTimeDays: pr.leadTimeDays.toFixed(2),
-        targetAuthors: pr.targetAuthors,
+        targetAuthors: reviewers,
       })
       .onConflictDoUpdate({
         target: [
@@ -609,7 +606,7 @@ async function importIacPrLeadTime(repoName: string, since: string) {
           title: pr.title,
           mergedAt: new Date(pr.mergedAt),
           leadTimeDays: pr.leadTimeDays.toFixed(2),
-          targetAuthors: pr.targetAuthors,
+          targetAuthors: reviewers,
         },
       });
     count++;
