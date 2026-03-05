@@ -329,19 +329,43 @@ async function importWorkflows(repoName: string) {
 
   let count = 0;
   for (const wf of wfs) {
+    // Fetch workflow YAML content to detect reusable workflow references
+    // (e.g. pagopa/dx/.github/workflows/...) for DX pipeline classification.
+    // The original Steampipe CSV stored the full parsed YAML as JSON in the
+    // pipeline column; we store its JSON serialization so that
+    // `pipeline LIKE '%pagopa/dx%'` keeps working in dashboard queries.
+    let pipelineContent: string | null = wf.path || null;
+    try {
+      const { data: fileData } = await octokit.rest.repos.getContent({
+        owner: ORGANIZATION,
+        repo: repoName,
+        path: wf.path,
+      });
+      if ("content" in fileData && fileData.content) {
+        const decoded = Buffer.from(fileData.content, "base64").toString(
+          "utf-8",
+        );
+        const parsed = yaml.load(decoded);
+        pipelineContent = JSON.stringify(parsed);
+      }
+    } catch {
+      // If we can't fetch content (deleted workflow, etc.), fall back to path
+      pipelineContent = wf.path || null;
+    }
+
     await db
       .insert(schema.workflows)
       .values({
         id: wf.id,
         repositoryId: repoId,
         name: wf.name,
-        pipeline: wf.path || null,
+        pipeline: pipelineContent,
       })
       .onConflictDoUpdate({
         target: schema.workflows.id,
         set: {
           name: wf.name,
-          pipeline: wf.path || null,
+          pipeline: pipelineContent,
         },
       });
     count++;
