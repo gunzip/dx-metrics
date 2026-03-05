@@ -78,7 +78,11 @@ export function SimpleLineChart({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="#6b7280" />
-          <YAxis tick={{ fontSize: 11 }} stroke="#6b7280" />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            stroke="#6b7280"
+            domain={[0, (max: number) => Math.ceil(max * 1.1)]}
+          />
           <Tooltip
             contentStyle={{
               backgroundColor: "white",

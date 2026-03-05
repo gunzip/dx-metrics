@@ -18,38 +18,17 @@ export async function GET(req: NextRequest) {
     `);
     const maxDate = (maxDateResult.rows[0] as { max_date: string }).max_date;
 
-    // IaC PR Lead Time (moving average)
+    // IaC PR Lead Time (weekly average)
     const leadTimeMovingAvg = await db.execute(sql`
-      WITH pr_lead_times AS (
-        SELECT created_at, merged_at,
-          EXTRACT(EPOCH FROM (merged_at - created_at)) / 86400 AS lead_time_days
-        FROM iac_pr_lead_times
-        WHERE repository_full_name = ${fullName}
-          AND merged_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
-          AND created_at IS NOT NULL AND merged_at IS NOT NULL
-          AND title != 'Version Packages'
-      ),
-      time_series AS (
-        SELECT generate_series(
-          (SELECT MIN(created_at::date) FROM pr_lead_times),
-          (SELECT MAX(merged_at::date) FROM pr_lead_times),
-          '1 day'::interval
-        )::date AS date
-      ),
-      rolling AS (
-        SELECT t.date,
-          CASE WHEN t.date >= (SELECT MIN(date) FROM time_series) + INTERVAL '7 days'
-            THEN ROUND(AVG(p.lead_time_days) FILTER (
-              WHERE p.created_at::date <= t.date AND p.merged_at::date >= t.date - INTERVAL '7 days'
-            )::numeric, 2)
-          END AS rolling_lead_time_days
-        FROM time_series t LEFT JOIN pr_lead_times p ON p.created_at::date <= t.date
-        GROUP BY t.date
-      )
-      SELECT date, rolling_lead_time_days
-      FROM rolling
-      WHERE rolling_lead_time_days IS NOT NULL
-      ORDER BY date
+      SELECT DATE_TRUNC('week', merged_at)::date AS week,
+        ROUND(AVG(EXTRACT(EPOCH FROM (merged_at - created_at)) / 86400)::numeric, 2) AS avg_lead_time_days
+      FROM iac_pr_lead_times
+      WHERE repository_full_name = ${fullName}
+        AND merged_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND created_at IS NOT NULL AND merged_at IS NOT NULL
+        AND title != 'Version Packages'
+      GROUP BY DATE_TRUNC('week', merged_at)::date
+      ORDER BY week
     `);
 
     // IaC PR Lead Time (trend)
@@ -72,7 +51,7 @@ export async function GET(req: NextRequest) {
         FROM pr_lead_times p CROSS JOIN stats s GROUP BY s.x_avg, s.y_avg
       )
       SELECT p.created_date AS date,
-        ROUND((r.slope * p.x + (r.y_avg - r.slope * r.x_avg))::numeric, 2) AS trend_line
+        GREATEST(ROUND((r.slope * p.x + (r.y_avg - r.slope * r.x_avg))::numeric, 2), 0) AS trend_line
       FROM pr_lead_times p CROSS JOIN regression r ORDER BY p.created_date
     `);
 

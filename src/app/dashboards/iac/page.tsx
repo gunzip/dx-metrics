@@ -1,12 +1,16 @@
 "use client";
 
 import { DashboardFilters } from "@/components/DashboardFilters";
-import { SimpleLineChart, DataTable } from "@/components/Charts";
+import {
+  SimpleLineChart,
+  SimpleBarChart,
+  DataTable,
+} from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface IacDashboardData {
-  leadTimeMovingAvg: { date: string; rolling_lead_time_days: number }[];
+  leadTimeMovingAvg: { week: string; avg_lead_time_days: number }[];
   leadTimeTrend: { date: string; trend_line: number }[];
   supervisedVsUnsupervised: {
     run_date: string;
@@ -78,13 +82,13 @@ export default function IacDashboard() {
       {data && (
         <>
           <div className="grid grid-cols-2 gap-4">
-            <SimpleLineChart
-              title="IaC PR Lead Time (moving average)"
+            <SimpleBarChart
+              title="IaC PR Lead Time (weekly average)"
               data={data.leadTimeMovingAvg}
-              xKey="date"
-              lines={[
+              xKey="week"
+              bars={[
                 {
-                  key: "rolling_lead_time_days",
+                  key: "avg_lead_time_days",
                   name: "Lead Time",
                   color: "#2563eb",
                 },
