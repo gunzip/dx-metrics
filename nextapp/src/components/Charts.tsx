@@ -69,10 +69,16 @@ export function SimpleLineChart({
   return (
     <ChartWrapper title={title} className={className}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart
+          data={data}
+          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
+          />
           <Tooltip />
           <Legend />
           {lines.map((line, i) => (
@@ -116,6 +122,7 @@ export function SimpleBarChart({
         <BarChart
           data={data}
           layout={layout === "vertical" ? "vertical" : "horizontal"}
+          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           {layout === "vertical" ? (
@@ -131,7 +138,10 @@ export function SimpleBarChart({
           ) : (
             <>
               <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
+              />
             </>
           )}
           <Tooltip />

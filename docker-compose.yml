@@ -19,6 +19,7 @@ services:
     build:
       context: ./nextapp
       dockerfile: Dockerfile
+      target: dev
     ports:
       - "8080:3000"
     environment:
@@ -28,8 +29,9 @@ services:
       AUTH_GITHUB_ID: ${AUTH_GITHUB_ID:-unused}
       AUTH_GITHUB_SECRET: ${AUTH_GITHUB_SECRET:-unused}
       AUTH_TRUST_HOST: "true"
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:8080}
       SKIP_AUTH: "true"
+      NODE_ENV: development
     depends_on:
       db:
         condition: service_healthy

@@ -15,6 +15,16 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm run build
 
+# Development stage
+FROM base AS dev
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NODE_ENV=development
+EXPOSE 3000
+CMD ["pnpm", "dev"]
+
 # Production
 FROM base AS runner
 WORKDIR /app
