@@ -589,7 +589,7 @@ async function importIacPrLeadTime(repoName: string, since: string) {
 async function importCommitsForMember(member: string, since: string) {
   const startTime = Date.now();
   const sinceDate = new Date(since);
-  const query = `committer-date:${sinceDate.toISOString().split("T")[0]}..${new Date().toISOString().split("T")[0]} author:${member}`;
+  const query = `org:${ORGANIZATION} committer-date:${sinceDate.toISOString().split("T")[0]}..${new Date().toISOString().split("T")[0]} author:${member}`;
 
   try {
     let fetchedCount = 0;
