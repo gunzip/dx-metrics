@@ -542,7 +542,11 @@ async function importIacPrLeadTime(repoName: string, since: string) {
 
     for (const pr of prs.data) {
       // If a DX team member made a commit in this PR, they are a potential reviewer/supervisor
-      if (isTarget && commitAuthor && commitAuthor !== pr.user?.login?.toLowerCase()) {
+      if (
+        isTarget &&
+        commitAuthor &&
+        commitAuthor !== pr.user?.login?.toLowerCase()
+      ) {
         if (!prReviewersMap.has(pr.number))
           prReviewersMap.set(pr.number, new Set());
         prReviewersMap.get(pr.number)!.add(commitAuthor);
@@ -581,7 +585,9 @@ async function importIacPrLeadTime(repoName: string, since: string) {
   let count = 0;
   for (const pr of prMap.values()) {
     const reviewers = prReviewersMap.has(pr.number)
-      ? Array.from(prReviewersMap.get(pr.number)!).filter((a) => a !== "web-flow")
+      ? Array.from(prReviewersMap.get(pr.number)!).filter(
+          (a) => a !== "web-flow",
+        )
       : [];
 
     await db
