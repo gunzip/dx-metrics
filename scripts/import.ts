@@ -937,6 +937,12 @@ async function importTrackerCsv(csvPath: string) {
   const priorityIdx = headers.findIndex((h) =>
     h.toLowerCase().includes("priorit"),
   );
+  const isClosedIdx = headers.findIndex((h) =>
+    h.toLowerCase().includes("completato"),
+  );
+  const statusIdx = headers.findIndex((h) =>
+    h.toLowerCase().includes("status"),
+  );
 
   // Clear existing tracker data and reimport
   await db.delete(schema.trackerRequests);
@@ -957,6 +963,8 @@ async function importTrackerCsv(csvPath: string) {
         : "";
     const category = categoryIdx >= 0 ? cols[categoryIdx] : "";
     const priority = priorityIdx >= 0 ? cols[priorityIdx] : "";
+    const isClosed = isClosedIdx >= 0 ? cols[isClosedIdx] : "";
+    const status = statusIdx >= 0 ? cols[statusIdx] : "";
 
     // Parse dates
     let submittedAt: Date | null = null;
@@ -1006,6 +1014,8 @@ async function importTrackerCsv(csvPath: string) {
       closedAt,
       category,
       priority,
+      isClosed,
+      status,
       rawSubmittedAt: rawSubmitted,
       rawClosedAt: rawClosed,
     });

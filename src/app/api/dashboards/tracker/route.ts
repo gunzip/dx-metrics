@@ -7,17 +7,24 @@ export async function GET() {
     // Opened requests (total)
     const openedTotal = await db.execute(sql`
       SELECT COUNT(*) AS value FROM tracker_requests
+      WHERE submitted_at IS NOT NULL
     `);
 
     // Closed requests (total)
     const closedTotal = await db.execute(sql`
-      SELECT COUNT(*) AS value FROM tracker_requests WHERE closed_at IS NOT NULL
+      SELECT COUNT(*) AS value FROM tracker_requests 
+      WHERE is_closed = 'true' 
+      OR (status IS NOT NULL AND status != '')
+      OR closed_at IS NOT NULL
     `);
 
     // Avg Time to Close
     const avgClose = await db.execute(sql`
       SELECT ROUND(AVG(EXTRACT(EPOCH FROM (closed_at - submitted_at)) / 86400)::numeric, 2) AS value
-      FROM tracker_requests WHERE closed_at IS NOT NULL AND submitted_at IS NOT NULL
+      FROM tracker_requests 
+      WHERE (is_closed = 'true' OR (status IS NOT NULL AND status != '') OR closed_at IS NOT NULL)
+      AND closed_at IS NOT NULL 
+      AND submitted_at IS NOT NULL
     `);
 
     // Requests Trend (percentage change from linear regression)

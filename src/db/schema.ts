@@ -186,6 +186,8 @@ export const trackerRequests = pgTable("tracker_requests", {
   closedAt: timestamp("closed_at"),
   category: text("category"),
   priority: text("priority"),
+  isClosed: text("is_closed"),
+  status: text("status"),
   rawSubmittedAt: text("raw_submitted_at"),
   rawClosedAt: text("raw_closed_at"),
 });
