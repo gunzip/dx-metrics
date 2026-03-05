@@ -17,14 +17,14 @@ interface PrDashboardData {
     totalComments: number | null;
     commentsPerPr: number | null;
   };
-  leadTimeMovingAvg: { date: string; rolling_lead_time_days: number }[];
+  leadTimeMovingAvg: { week: string; avg_lead_time_days: number }[];
   leadTimeTrend: { date: string; trend_line: number }[];
   mergedPrs: { date: string; pr_count: number }[];
   unmergedPrs: { date: string; open_prs: number }[];
   newPrs: { date: string; pr_count: number }[];
   cumulatedNewPrs: { date: string; cumulative_count: number }[];
-  prSize: { day: string; rolling_avg_additions: number }[];
-  prComments: { day: string; rolling_avg_comments: number }[];
+  prSize: { week: string; avg_additions: number }[];
+  prComments: { week: string; avg_comments: number }[];
   prSizeDistribution: {
     size_range: string;
     pr_count: number;
@@ -84,13 +84,13 @@ export default function PullRequestsDashboard() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <SimpleLineChart
-              title="Merged PR Lead Time (moving average)"
+            <SimpleBarChart
+              title="Merged PR Lead Time (weekly average)"
               data={data.leadTimeMovingAvg}
-              xKey="date"
-              lines={[
+              xKey="week"
+              bars={[
                 {
-                  key: "rolling_lead_time_days",
+                  key: "avg_lead_time_days",
                   name: "Lead Time",
                   color: "#2563eb",
                 },
@@ -132,26 +132,26 @@ export default function PullRequestsDashboard() {
                 },
               ]}
             />
-            <SimpleLineChart
-              title="Pull Requests Size (moving average)"
+            <SimpleBarChart
+              title="Pull Requests Size (weekly average)"
               data={data.prSize}
-              xKey="day"
-              lines={[
+              xKey="week"
+              bars={[
                 {
-                  key: "rolling_avg_additions",
-                  name: "Rolling Avg Additions",
+                  key: "avg_additions",
+                  name: "Avg Additions",
                   color: "#2196F3",
                 },
               ]}
             />
-            <SimpleLineChart
-              title="Pull Requests Comments (moving average)"
+            <SimpleBarChart
+              title="Pull Requests Comments (weekly average)"
               data={data.prComments}
-              xKey="day"
-              lines={[
+              xKey="week"
+              bars={[
                 {
-                  key: "rolling_avg_comments",
-                  name: "Rolling Avg Comments",
+                  key: "avg_comments",
+                  name: "Avg Comments",
                   color: "#0891b2",
                 },
               ]}

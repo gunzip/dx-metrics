@@ -43,29 +43,15 @@ export async function GET(req: NextRequest) {
     `);
 
     const leadTimeMovingAvg = await db.execute(sql`
-      WITH pr_lead_times AS (
-        SELECT pr.created_at, pr.merged_at,
-          EXTRACT(EPOCH FROM (pr.merged_at - pr.created_at)) / 86400 AS lead_time_days
-        FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
-        WHERE r.full_name = ${fullName}
-          AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
-          AND pr.merged_at IS NOT NULL AND pr.created_at IS NOT NULL
-          AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
-      ),
-      time_series AS (
-        SELECT generate_series(
-          (SELECT MIN(created_at::date) FROM pr_lead_times),
-          CURRENT_DATE, '1 day'::interval
-        )::date AS date
-      )
-      SELECT t.date,
-        CASE WHEN t.date >= (SELECT MIN(date) FROM time_series) + INTERVAL '7 days'
-          THEN ROUND(AVG(p.lead_time_days) FILTER (
-            WHERE p.merged_at::date BETWEEN t.date - INTERVAL '7 days' AND t.date
-          )::numeric, 2)
-        END AS rolling_lead_time_days
-      FROM time_series t LEFT JOIN pr_lead_times p ON p.merged_at::date <= t.date
-      GROUP BY t.date ORDER BY t.date
+      SELECT DATE_TRUNC('week', pr.merged_at)::date AS week,
+        ROUND(AVG(EXTRACT(EPOCH FROM (pr.merged_at - pr.created_at)) / 86400)::numeric, 2) AS avg_lead_time_days
+      FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
+      WHERE r.full_name = ${fullName}
+        AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND pr.merged_at IS NOT NULL AND pr.created_at IS NOT NULL
+        AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+      GROUP BY DATE_TRUNC('week', pr.merged_at)::date
+      ORDER BY week
     `);
 
     const leadTimeTrend = await db.execute(sql`
@@ -173,40 +159,31 @@ export async function GET(req: NextRequest) {
     `);
 
     const prSize = await db.execute(sql`
-      SELECT pr.created_at::date AS day,
-        ROUND(AVG(AVG(pr.additions)) OVER (
-          ORDER BY pr.created_at::date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-        )::numeric, 2) AS rolling_avg_additions
+      SELECT DATE_TRUNC('week', pr.created_at)::date AS week,
+        ROUND(AVG(pr.additions)::numeric, 2) AS avg_additions
       FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days}) AND pr.additions IS NOT NULL
-      GROUP BY pr.created_at::date ORDER BY day
+      GROUP BY DATE_TRUNC('week', pr.created_at)::date ORDER BY week
     `);
 
     const prComments = await db.execute(sql`
-      SELECT pr.created_at::date AS day,
-        ROUND(AVG(AVG(pr.total_comments_count)) OVER (
-          ORDER BY pr.created_at::date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-        )::numeric, 2) AS rolling_avg_comments
+      SELECT DATE_TRUNC('week', pr.created_at)::date AS week,
+        ROUND(AVG(pr.total_comments_count)::numeric, 2) AS avg_comments
       FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
       WHERE r.full_name = ${fullName} AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
-      GROUP BY pr.created_at::date ORDER BY day
+      GROUP BY DATE_TRUNC('week', pr.created_at)::date ORDER BY week
     `);
 
     const prCommentsBySize = await db.execute(sql`
-      SELECT pr.created_at::date AS day,
+      SELECT DATE_TRUNC('week', pr.created_at)::date AS week,
         ROUND(
-          AVG(
-            AVG(pr.total_comments_count)::numeric / NULLIF(AVG(pr.additions)::numeric, 0)
-          ) OVER (
-            ORDER BY pr.created_at::date
-            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-          ), 2
-        ) AS rolling_avg_comments_per_addition
+          AVG(pr.total_comments_count)::numeric / NULLIF(AVG(pr.additions)::numeric, 0)
+        , 2) AS avg_comments_per_addition
       FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
-      GROUP BY pr.created_at::date ORDER BY day
+      GROUP BY DATE_TRUNC('week', pr.created_at)::date ORDER BY week
     `);
 
     const prSizeDistribution = await db.execute(sql`
@@ -261,17 +238,17 @@ export async function GET(req: NextRequest) {
         commentsPerPr: Number(commentsPerPr.rows[0]?.value) || null,
       },
       leadTimeMovingAvg: numericRows(leadTimeMovingAvg.rows, [
-        "rolling_lead_time_days",
+        "avg_lead_time_days",
       ]),
       leadTimeTrend: numericRows(leadTimeTrend.rows, ["trend_line"]),
       mergedPrs: numericRows(mergedPrs.rows, ["pr_count"]),
       unmergedPrs: numericRows(unmergedPrs.rows, ["open_prs"]),
       newPrs: numericRows(newPrs.rows, ["pr_count"]),
       cumulatedNewPrs: numericRows(cumulatedNewPrs.rows, ["cumulative_count"]),
-      prSize: numericRows(prSize.rows, ["rolling_avg_additions"]),
-      prComments: numericRows(prComments.rows, ["rolling_avg_comments"]),
+      prSize: numericRows(prSize.rows, ["avg_additions"]),
+      prComments: numericRows(prComments.rows, ["avg_comments"]),
       prCommentsBySize: numericRows(prCommentsBySize.rows, [
-        "rolling_avg_comments_per_addition",
+        "avg_comments_per_addition",
       ]),
       prSizeDistribution: numericRows(prSizeDistribution.rows, [
         "pr_count",

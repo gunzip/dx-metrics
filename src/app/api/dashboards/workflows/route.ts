@@ -36,11 +36,10 @@ export async function GET(req: NextRequest) {
     `);
     const maxDate = (maxDateResult.rows[0] as { max_date: string }).max_date;
 
-    // Deployments to Production (moving average)
+    // Deployments to Production (weekly average)
     const deployments = await db.execute(sql`
       SELECT DATE_TRUNC('week', wr.created_at) AS run_week,
-        AVG(COUNT(*)) OVER (ORDER BY DATE_TRUNC('week', wr.created_at)
-          ROWS BETWEEN 3 PRECEDING AND CURRENT ROW) AS moving_avg_deployment_freq
+        COUNT(*) AS weekly_deployment_count
       FROM workflow_runs wr
       JOIN workflows w ON wr.workflow_id = w.id
       JOIN repositories r ON wr.repository_id = r.id

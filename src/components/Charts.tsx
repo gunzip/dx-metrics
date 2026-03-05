@@ -144,19 +144,23 @@ export function SimpleBarChart({
             type={isVertical ? "number" : "category"}
             tick={{ fontSize: isVertical ? 11 : 9 }}
             stroke="#6b7280"
-            {...(!isVertical && {
-              interval: Math.max(0, Math.floor(data.length / 8) - 1),
-              angle: data.length > 8 ? -45 : 0,
-              textAnchor: data.length > 8 ? "end" : "middle",
-              height: data.length > 8 ? 60 : 30,
-            })}
+            {...(isVertical
+              ? { domain: [0, (max: number) => Math.ceil(max * 1.1)] }
+              : {
+                  interval: Math.max(0, Math.floor(data.length / 8) - 1),
+                  angle: data.length > 8 ? -45 : 0,
+                  textAnchor: data.length > 8 ? "end" : "middle",
+                  height: data.length > 8 ? 60 : 30,
+                })}
           />
           <YAxis
             dataKey={isVertical ? xKey : undefined}
-            type={isVertical ? "category" : undefined}
+            type={isVertical ? "category" : "number"}
             tick={{ fontSize: 11 }}
             stroke="#6b7280"
-            {...(isVertical && { width: 120 })}
+            {...(isVertical
+              ? { width: 120 }
+              : { domain: [0, (max: number) => Math.ceil(max * 1.1)] })}
           />
           <Tooltip
             contentStyle={{

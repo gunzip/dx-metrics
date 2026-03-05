@@ -10,7 +10,7 @@ import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface WorkflowDashboardData {
-  deployments: { run_week: string; moving_avg_deployment_freq: number }[];
+  deployments: { run_week: string; weekly_deployment_count: number }[];
   dxVsNonDx: {
     run_date: string;
     pipeline_type: string;
@@ -88,13 +88,13 @@ export default function WorkflowsDashboard() {
       {data && (
         <>
           <div className="grid grid-cols-2 gap-4">
-            <SimpleLineChart
-              title="Deployments to Production (moving average)"
+            <SimpleBarChart
+              title="Deployments to Production (weekly)"
               data={data.deployments}
               xKey="run_week"
-              lines={[
+              bars={[
                 {
-                  key: "moving_avg_deployment_freq",
+                  key: "weekly_deployment_count",
                   name: "Deployments",
                   color: "#2563eb",
                 },
