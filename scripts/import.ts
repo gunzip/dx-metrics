@@ -24,6 +24,33 @@ import yaml from "js-yaml";
 import path from "path";
 
 // --- CLI Args ---
+function printHelp() {
+  console.log(`
+Usage: npx tsx scripts/import.ts --since YYYY-MM-DD [options]
+
+Required:
+  --since YYYY-MM-DD        Start date for the import (e.g. 2024-01-01)
+
+Options:
+  --entity <type>           Import only the specified entity type (default: all)
+                            Valid values:
+                              all               Import everything
+                              pull-requests     GitHub pull requests
+                              workflows         GitHub Actions workflow definitions
+                              workflow-runs     GitHub Actions workflow run history
+                              iac-pr            IaC pull request lead time
+                              commits           Repository commits
+                              code-search       Code search results (DX repo)
+                              terraform-registry Terraform registry module releases
+                              tracker           Tracker CSV data (requires --tracker-csv)
+
+  --tracker-csv <path>      Path to the tracker CSV file (used with --entity tracker)
+  --config <path>           Path to config YAML file (default: config.yaml)
+  --force                   Re-import even if a checkpoint already exists
+  --help                    Show this help message
+`);
+}
+
 function parseArgs() {
   const args = process.argv.slice(2);
   let since = "";
@@ -33,6 +60,10 @@ function parseArgs() {
   let configPath = path.resolve(__dirname, "../config.yaml");
 
   for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--help" || args[i] === "-h") {
+      printHelp();
+      process.exit(0);
+    }
     if (args[i] === "--since" && args[i + 1]) since = args[i + 1];
     if (args[i] === "--entity" && args[i + 1]) entity = args[i + 1];
     if (args[i] === "--tracker-csv" && args[i + 1]) trackerCsv = args[i + 1];
@@ -41,9 +72,7 @@ function parseArgs() {
   }
 
   if (!since) {
-    console.error(
-      "Usage: npx tsx scripts/import.ts --since YYYY-MM-DD [--config path/to/config.yaml] [--force]",
-    );
+    printHelp();
     process.exit(1);
   }
 
@@ -693,39 +722,68 @@ async function importTerraformRegistryReleases() {
   const API = "https://registry.terraform.io/v1";
 
   try {
-    const res = await fetch(`${API}/modules/${NAMESPACE}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = (await res.json()) as {
-      modules: { name: string; provider: string; namespace: string }[];
-    };
+    // Paginate through all modules in the namespace
+    const allModules: { name: string; provider: string; namespace: string }[] =
+      [];
+    let nextUrl: string | null = `${API}/modules/${NAMESPACE}`;
+    while (nextUrl) {
+      const res = await fetch(nextUrl);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as {
+        meta?: { next_url?: string };
+        modules: { name: string; provider: string; namespace: string }[];
+      };
+      allModules.push(...(data.modules || []));
+      nextUrl = data.meta?.next_url ?? null;
+      if (nextUrl) await sleep(100);
+    }
 
     let totalCount = 0;
-    for (const mod of data.modules || []) {
+    for (const mod of allModules) {
       const vRes = await fetch(
         `${API}/modules/${mod.namespace}/${mod.name}/${mod.provider}/versions`,
       );
       if (!vRes.ok) continue;
       const vData = (await vRes.json()) as {
-        modules: { versions: { version: string; published_at: string }[] }[];
+        modules: { versions: { version: string }[] }[];
       };
-      const versions = vData.modules?.[0]?.versions || [];
-
-      const sorted = [...versions].sort(
-        (a, b) =>
-          new Date(a.published_at).getTime() -
-          new Date(b.published_at).getTime(),
+      // The /versions endpoint does not include published_at; sort by semver ascending
+      const versions = (vData.modules?.[0]?.versions || []).map(
+        (v) => v.version,
       );
 
-      const seen = new Set<number>();
-      for (const v of sorted) {
-        const match = v.version.match(/^v?(\d+)\./);
+      const sorted = [...versions].sort((a, b) => {
+        const parse = (s: string) => s.replace(/^v/, "").split(".").map(Number);
+        const [aMaj, aMin = 0, aPatch = 0] = parse(a);
+        const [bMaj, bMin = 0, bPatch = 0] = parse(b);
+        return aMaj - bMaj || aMin - bMin || aPatch - bPatch;
+      });
+
+      // Find first version per major
+      const firstByMajor = new Map<number, string>();
+      for (const ver of sorted) {
+        const match = ver.match(/^v?(\d+)\./);
         if (!match) continue;
         const major = parseInt(match[1], 10);
-        if (seen.has(major)) continue;
-        seen.add(major);
+        if (!firstByMajor.has(major)) firstByMajor.set(major, ver);
+      }
+
+      for (const [major, firstVer] of firstByMajor) {
+        // Fetch published_at from the individual version endpoint
+        const detailRes = await fetch(
+          `${API}/modules/${mod.namespace}/${mod.name}/${mod.provider}/${firstVer}`,
+        );
+        if (!detailRes.ok) continue;
+        const detail = (await detailRes.json()) as {
+          published_at?: string;
+        };
+        const publishedAt = detail.published_at
+          ? new Date(detail.published_at)
+          : null;
+        if (!publishedAt || isNaN(publishedAt.getTime())) continue;
 
         const majorCount = sorted.filter((sv) => {
-          const m = sv.version.match(/^v?(\d+)\./);
+          const m = sv.match(/^v?(\d+)\./);
           return m && parseInt(m[1], 10) === major;
         }).length;
 
@@ -735,8 +793,8 @@ async function importTerraformRegistryReleases() {
             moduleName: mod.name,
             provider: mod.provider,
             majorVersion: major,
-            firstReleaseVersion: v.version,
-            releaseDate: new Date(v.published_at),
+            firstReleaseVersion: firstVer,
+            releaseDate: publishedAt,
             releasesCount: majorCount,
           })
           .onConflictDoUpdate({
@@ -750,8 +808,8 @@ async function importTerraformRegistryReleases() {
             },
           });
         totalCount++;
+        await sleep(100);
       }
-      await sleep(100);
     }
     console.log(`    ✓ ${totalCount} registry releases`);
   } catch (e) {
@@ -927,7 +985,10 @@ async function main() {
       return;
     }
 
-    const repoId = repoName ? await ensureRepo(repoName) : null;
+    // Only resolve repoId when repoName is an actual repository
+    // (not a member username, as happens for "commits" entity)
+    const isRepoEntity = repoName && REPOSITORIES.includes(repoName);
+    const repoId = isRepoEntity ? await ensureRepo(repoName) : null;
     const syncRunId = await startCheckpoint(
       entityType,
       repoName,
