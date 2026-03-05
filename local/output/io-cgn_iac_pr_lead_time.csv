@@ -1,4 +1,0 @@
-repository_full_name,title,author,created_at,merged_at,number,lead_time_days,"target_authors"
-"pagopa/io-cgn","[#PE-716] Import functions cgn to ITN with new queue based implementation","michaeldisaro",2024-10-03T07:24:28Z,2024-10-25T14:38:34Z,1,22.30,""
-"pagopa/io-cgn","[#PE-777] Attribute Authority ITN infra migration","michaeldisaro",2024-11-12T17:04:12Z,2024-11-29T14:35:35Z,18,16.90,""
-"pagopa/io-cgn","[#IOBP-1878] added storage","michaeldisaro",2025-07-18T12:20:59Z,2025-07-22T08:51:59Z,84,3.85,""
