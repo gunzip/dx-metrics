@@ -1,11 +1,6 @@
+node_modules
+.next
 .env
-.env.*
-*.csv
-test.*
-output/*
-backup/*
-.steampipe/
-node_modules/
-*.js
+.env.local
 .pnpm-store
-local
+node_modules/
