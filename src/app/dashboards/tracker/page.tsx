@@ -69,25 +69,6 @@ export default function TrackerDashboard() {
               ]}
             />
           </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <SimpleBarChart
-              title="DX Requests per Category"
-              data={data.byCategory}
-              xKey="category"
-              bars={[
-                { key: "requests", name: "Requests", color: "#2563eb" },
-              ]}
-            />
-            <SimpleBarChart
-              title="DX Requests per Priority"
-              data={data.byPriority}
-              xKey="priority"
-              bars={[
-                { key: "requests", name: "Requests", color: "#16a34a" },
-              ]}
-            />
-          </div>
         </>
       )}
     </div>
