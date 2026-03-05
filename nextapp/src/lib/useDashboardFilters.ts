@@ -28,7 +28,7 @@ export function useDashboardFilters({
       }
       router.push(`${pathname}?${params.toString()}`);
     },
-    [router, pathname, searchParams]
+    [router, pathname, searchParams],
   );
 
   const setRepository = (repo: string) => updateFilters({ repository: repo });

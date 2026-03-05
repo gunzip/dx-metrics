@@ -38,10 +38,10 @@ interface PrDashboardData {
 export default function PullRequestsDashboard() {
   const { repository, days, setRepository, setDays } = useDashboardFilters();
 
-  const { data, loading } = useDashboardData<PrDashboardData>(
-    "pull-requests",
-    { repository, days }
-  );
+  const { data, loading } = useDashboardData<PrDashboardData>("pull-requests", {
+    repository,
+    days,
+  });
 
   return (
     <div>
@@ -65,8 +65,14 @@ export default function PullRequestsDashboard() {
               value={data.cards.avgLeadTime}
               suffix="days"
             />
-            <MetricCard label="Total Pull Requests" value={data.cards.totalPrs} />
-            <MetricCard label="Total Comments" value={data.cards.totalComments} />
+            <MetricCard
+              label="Total Pull Requests"
+              value={data.cards.totalPrs}
+            />
+            <MetricCard
+              label="Total Comments"
+              value={data.cards.totalComments}
+            />
             <MetricCard
               label="Comments per PR"
               value={data.cards.commentsPerPr}
@@ -90,33 +96,25 @@ export default function PullRequestsDashboard() {
               title="Merged PR Lead Time (trend)"
               data={data.leadTimeTrend}
               xKey="date"
-              lines={[
-                { key: "trend_line", name: "Trend", color: "#dc2626" },
-              ]}
+              lines={[{ key: "trend_line", name: "Trend", color: "#dc2626" }]}
             />
             <SimpleBarChart
               title="Merged Pull Requests"
               data={data.mergedPrs}
               xKey="date"
-              bars={[
-                { key: "pr_count", name: "Merged PRs", color: "#2563eb" },
-              ]}
+              bars={[{ key: "pr_count", name: "Merged PRs", color: "#2563eb" }]}
             />
             <SimpleLineChart
               title="Unmerged Pull Requests"
               data={data.unmergedPrs}
               xKey="date"
-              lines={[
-                { key: "open_prs", name: "Open PRs", color: "#ea580c" },
-              ]}
+              lines={[{ key: "open_prs", name: "Open PRs", color: "#ea580c" }]}
             />
             <SimpleBarChart
               title="New Pull Requests"
               data={data.newPrs}
               xKey="date"
-              bars={[
-                { key: "pr_count", name: "New PRs", color: "#16a34a" },
-              ]}
+              bars={[{ key: "pr_count", name: "New PRs", color: "#16a34a" }]}
             />
             <SimpleLineChart
               title="Cumulated New Pull Requests"
@@ -158,9 +156,7 @@ export default function PullRequestsDashboard() {
               title="Pull Requests Size (additions)"
               data={data.prSizeDistribution}
               xKey="size_range"
-              bars={[
-                { key: "pr_count", name: "PR Count", color: "#2196F3" },
-              ]}
+              bars={[{ key: "pr_count", name: "PR Count", color: "#2196F3" }]}
             />
           </div>
 

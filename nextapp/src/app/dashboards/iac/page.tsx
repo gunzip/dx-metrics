@@ -86,9 +86,7 @@ export default function IacDashboard() {
               title="IaC PR Lead Time (trend)"
               data={data.leadTimeTrend}
               xKey="date"
-              lines={[
-                { key: "trend_line", name: "Trend", color: "#dc2626" },
-              ]}
+              lines={[{ key: "trend_line", name: "Trend", color: "#dc2626" }]}
             />
             <SimpleLineChart
               title="Supervised vs Unsupervised IaC PRs (Cumulative)"
@@ -111,9 +109,7 @@ export default function IacDashboard() {
               title="IaC PRs Count Over Time"
               data={data.prsOverTime}
               xKey="week"
-              lines={[
-                { key: "pr_count", name: "PR Count", color: "#2563eb" },
-              ]}
+              lines={[{ key: "pr_count", name: "PR Count", color: "#2563eb" }]}
             />
           </div>
 

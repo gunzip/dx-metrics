@@ -28,9 +28,7 @@ export default function DxTeamDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
-        Team DX Metrics
-      </h2>
+      <h2 className="mb-4 text-xl font-bold text-gray-900">Team DX Metrics</h2>
       <DashboardFilters
         timeInterval={days}
         onTimeIntervalChange={setDays}

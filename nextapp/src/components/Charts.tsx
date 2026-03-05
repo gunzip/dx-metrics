@@ -66,7 +66,7 @@ export function SimpleLineChart({
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
           <Tooltip />
           <Legend />
           {lines.map((line, i) => (
@@ -117,7 +117,7 @@ export function SimpleBarChart({
           ) : (
             <>
               <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
             </>
           )}
           <Tooltip />
