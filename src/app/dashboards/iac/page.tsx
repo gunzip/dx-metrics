@@ -50,7 +50,15 @@ export default function IacDashboard() {
       else entry.unsupervised = Number(row.cumulative_count);
       map.set(row.run_date, entry);
     }
-    return Array.from(map.values());
+    const arr = Array.from(map.values());
+    // Fill forward: carry last cumulative value on days where a type has no entry
+    for (let i = 1; i < arr.length; i++) {
+      if (arr[i].supervised === 0 && arr[i - 1].supervised > 0)
+        arr[i].supervised = arr[i - 1].supervised;
+      if (arr[i].unsupervised === 0 && arr[i - 1].unsupervised > 0)
+        arr[i].unsupervised = arr[i - 1].unsupervised;
+    }
+    return arr;
   })();
 
   return (

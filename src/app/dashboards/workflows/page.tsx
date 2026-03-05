@@ -63,7 +63,14 @@ export default function WorkflowsDashboard() {
       else entry.non_dx = Number(row.cumulative_count);
       map.set(row.run_date, entry);
     }
-    return Array.from(map.values());
+    const arr = Array.from(map.values());
+    // Fill forward: carry last cumulative value on days where a type has no entry
+    for (let i = 1; i < arr.length; i++) {
+      if (arr[i].dx === 0 && arr[i - 1].dx > 0) arr[i].dx = arr[i - 1].dx;
+      if (arr[i].non_dx === 0 && arr[i - 1].non_dx > 0)
+        arr[i].non_dx = arr[i - 1].non_dx;
+    }
+    return arr;
   })();
 
   return (

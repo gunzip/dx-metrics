@@ -10,6 +10,15 @@ export async function GET(req: NextRequest) {
   const fullName = `${org}/${repository}`;
 
   try {
+    // Compute the reference date (latest data point) for this repository
+    const maxDateResult = await db.execute(sql`
+      SELECT COALESCE(MAX(wr.created_at), NOW()) AS max_date
+      FROM workflow_runs wr
+      JOIN repositories r ON wr.repository_id = r.id
+      WHERE r.full_name = ${fullName}
+    `);
+    const maxDate = (maxDateResult.rows[0] as { max_date: string }).max_date;
+
     // Deployments to Production (moving average)
     const deployments = await db.execute(sql`
       SELECT DATE_TRUNC('week', wr.created_at) AS run_week,
@@ -22,7 +31,7 @@ export async function GET(req: NextRequest) {
         AND (LOWER(w.name) LIKE '%deploy%' OR LOWER(w.name) LIKE '%delivery%'
              OR LOWER(w.name) LIKE '%release%' OR LOWER(w.name) LIKE '%apply%')
         AND TRIM(wr.conclusion) = 'success'
-        AND wr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
         AND w.name != 'Labeler'
       GROUP BY DATE_TRUNC('week', wr.created_at) ORDER BY run_week
     `);
@@ -39,7 +48,7 @@ export async function GET(req: NextRequest) {
         JOIN workflows w ON wr.workflow_id = w.id
         JOIN repositories r ON wr.repository_id = r.id
         WHERE r.full_name = ${fullName}
-          AND wr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
           AND w.name NOT IN ('CodeQL', 'Labeler')
         GROUP BY wr.created_at::date,
           CASE WHEN w.pipeline LIKE '%pagopa/dx%' THEN 'DX Pipelines' ELSE 'Non-DX Pipelines' END
@@ -55,7 +64,7 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND TRIM(wr.conclusion) = 'failure'
-        AND wr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY workflow_name ORDER BY workflow_name
     `);
@@ -69,8 +78,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed' AND TRIM(wr.conclusion) = 'success'
-        AND wr.updated_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
-        AND wr.updated_at <= CURRENT_DATE
+        AND wr.updated_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at <= ${maxDate}::timestamptz
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY workflow_name ORDER BY workflow_name
     `);
@@ -84,8 +93,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed' AND TRIM(wr.conclusion) = 'success'
-        AND wr.updated_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
-        AND wr.updated_at <= CURRENT_DATE
+        AND wr.updated_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at <= ${maxDate}::timestamptz
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY workflow_name ORDER BY workflow_name
     `);
@@ -99,8 +108,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed' AND TRIM(wr.conclusion) = 'success'
-        AND wr.updated_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
-        AND wr.updated_at <= CURRENT_DATE
+        AND wr.updated_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at <= ${maxDate}::timestamptz
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY workflow_name ORDER BY workflow_name
     `);
@@ -114,8 +123,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed'
-        AND wr.created_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
-        AND wr.created_at <= CURRENT_DATE
+        AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND wr.created_at <= ${maxDate}::timestamptz
         AND w.pipeline LIKE '%infra_plan.yaml%' AND w.name != 'Labeler'
       ORDER BY run_timestamp
     `);
@@ -129,8 +138,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed'
-        AND wr.created_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
-        AND wr.created_at <= CURRENT_DATE
+        AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND wr.created_at <= ${maxDate}::timestamptz
         AND w.pipeline LIKE '%infra_apply.yaml%' AND w.name != 'Labeler'
       ORDER BY run_timestamp
     `);
@@ -146,7 +155,7 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND TRIM(wr.conclusion) IN ('success', 'failure')
-        AND wr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY w.name ORDER BY total_runs DESC
     `);

@@ -10,6 +10,14 @@ export async function GET(req: NextRequest) {
   const fullName = `${org}/${repository}`;
 
   try {
+    // Compute the reference date (latest data point) for this repository
+    const maxDateResult = await db.execute(sql`
+      SELECT COALESCE(MAX(GREATEST(created_at, merged_at)), NOW()) AS max_date
+      FROM iac_pr_lead_times
+      WHERE repository_full_name = ${fullName}
+    `);
+    const maxDate = (maxDateResult.rows[0] as { max_date: string }).max_date;
+
     // IaC PR Lead Time (moving average)
     const leadTimeMovingAvg = await db.execute(sql`
       WITH pr_lead_times AS (
@@ -17,24 +25,31 @@ export async function GET(req: NextRequest) {
           EXTRACT(EPOCH FROM (merged_at - created_at)) / 86400 AS lead_time_days
         FROM iac_pr_lead_times
         WHERE repository_full_name = ${fullName}
-          AND merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND merged_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
           AND created_at IS NOT NULL AND merged_at IS NOT NULL
           AND title != 'Version Packages'
       ),
       time_series AS (
         SELECT generate_series(
           (SELECT MIN(created_at::date) FROM pr_lead_times),
-          CURRENT_DATE, '1 day'::interval
+          (SELECT MAX(merged_at::date) FROM pr_lead_times),
+          '1 day'::interval
         )::date AS date
+      ),
+      rolling AS (
+        SELECT t.date,
+          CASE WHEN t.date >= (SELECT MIN(date) FROM time_series) + INTERVAL '7 days'
+            THEN ROUND(AVG(p.lead_time_days) FILTER (
+              WHERE p.created_at::date <= t.date AND p.merged_at::date >= t.date - INTERVAL '7 days'
+            )::numeric, 2)
+          END AS rolling_lead_time_days
+        FROM time_series t LEFT JOIN pr_lead_times p ON p.created_at::date <= t.date
+        GROUP BY t.date
       )
-      SELECT t.date,
-        CASE WHEN t.date >= (SELECT MIN(date) FROM time_series) + INTERVAL '7 days'
-          THEN ROUND(AVG(p.lead_time_days) FILTER (
-            WHERE p.created_at::date <= t.date AND p.merged_at::date >= t.date - INTERVAL '7 days'
-          )::numeric, 2)
-        END AS rolling_lead_time_days
-      FROM time_series t LEFT JOIN pr_lead_times p ON p.created_at::date <= t.date
-      GROUP BY t.date ORDER BY t.date
+      SELECT date, rolling_lead_time_days
+      FROM rolling
+      WHERE rolling_lead_time_days IS NOT NULL
+      ORDER BY date
     `);
 
     // IaC PR Lead Time (trend)
@@ -45,7 +60,7 @@ export async function GET(req: NextRequest) {
           ROW_NUMBER() OVER (ORDER BY created_at::date) AS x
         FROM iac_pr_lead_times
         WHERE repository_full_name = ${fullName}
-          AND merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND merged_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
           AND created_at IS NOT NULL AND merged_at IS NOT NULL
           AND title != 'Version Packages'
       ),
@@ -72,7 +87,7 @@ export async function GET(req: NextRequest) {
           COUNT(*) AS daily_count
         FROM iac_pr_lead_times
         WHERE repository_full_name = ${fullName}
-          AND created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
           AND created_at IS NOT NULL AND title != 'Version Packages'
         GROUP BY created_at::date,
           CASE WHEN COALESCE(array_length(target_authors, 1), 0) > 0 THEN 'Supervised PRs'
@@ -86,7 +101,7 @@ export async function GET(req: NextRequest) {
         COUNT(*) AS pr_count
       FROM iac_pr_lead_times
       WHERE repository_full_name = ${fullName}
-        AND created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
         AND created_at IS NOT NULL AND title != 'Version Packages'
       GROUP BY DATE_TRUNC('week', created_at)::date ORDER BY week
     `);
@@ -98,7 +113,7 @@ export async function GET(req: NextRequest) {
           unnest(target_authors) AS reviewer
         FROM iac_pr_lead_times
         WHERE repository_full_name = ${fullName}
-          AND created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
           AND created_at IS NOT NULL AND title != 'Version Packages'
           AND COALESCE(array_length(target_authors, 1), 0) > 0
       )
