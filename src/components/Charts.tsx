@@ -60,6 +60,7 @@ interface SimpleLineChartProps {
   xKey: string;
   lines: { key: string; name: string; color?: string }[];
   className?: string;
+  xValueFormatter?: (value: any) => string;
 }
 
 export function SimpleLineChart({
@@ -68,6 +69,7 @@ export function SimpleLineChart({
   xKey,
   lines,
   className,
+  xValueFormatter,
 }: SimpleLineChartProps) {
   return (
     <ChartWrapper title={title} className={className}>
@@ -77,7 +79,12 @@ export function SimpleLineChart({
           margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey={xKey} tick={{ fontSize: 11 }} stroke="#6b7280" />
+          <XAxis
+            dataKey={xKey}
+            tick={{ fontSize: 11 }}
+            stroke="#6b7280"
+            tickFormatter={xValueFormatter}
+          />
           <YAxis
             tick={{ fontSize: 11 }}
             stroke="#6b7280"
@@ -117,6 +124,7 @@ interface SimpleBarChartProps {
   bars: { key: string; name: string; color?: string; stackId?: string }[];
   className?: string;
   layout?: "horizontal" | "vertical";
+  xValueFormatter?: (value: any) => string;
 }
 
 export function SimpleBarChart({
@@ -126,6 +134,7 @@ export function SimpleBarChart({
   bars,
   className,
   layout = "horizontal",
+  xValueFormatter,
 }: SimpleBarChartProps) {
   const isVertical = layout === "vertical";
 
@@ -148,6 +157,7 @@ export function SimpleBarChart({
             type={isVertical ? "number" : "category"}
             tick={{ fontSize: isVertical ? 11 : 9 }}
             stroke="#6b7280"
+            tickFormatter={xValueFormatter}
             {...(isVertical
               ? { domain: [0, (max: number) => Math.ceil(max * 1.1)] }
               : {

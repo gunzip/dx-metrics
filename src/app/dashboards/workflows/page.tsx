@@ -45,6 +45,21 @@ export default function WorkflowsDashboard() {
     { repository, days },
   );
 
+  const formatDate = (value: string) => {
+    if (!value) return value;
+    try {
+      const date = new Date(value);
+      if (isNaN(date.getTime())) return value;
+      return date.toLocaleDateString("it-IT", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      });
+    } catch {
+      return value;
+    }
+  };
+
   // Pivot dxVsNonDx for chart
   const dxVsNonDxPivoted = (() => {
     if (!data?.dxVsNonDx) return [];
@@ -92,6 +107,7 @@ export default function WorkflowsDashboard() {
               title="Deployments to Production (weekly)"
               data={data.deployments}
               xKey="run_week"
+              xValueFormatter={formatDate}
               bars={[
                 {
                   key: "weekly_deployment_count",
@@ -104,6 +120,7 @@ export default function WorkflowsDashboard() {
               title="DX VS Non-DX Pipeline Runs (Cumulative)"
               data={dxVsNonDxPivoted}
               xKey="run_date"
+              xValueFormatter={formatDate}
               lines={[
                 { key: "dx", name: "DX Pipelines", color: "#2563eb" },
                 { key: "non_dx", name: "Non-DX Pipelines", color: "#dc2626" },
@@ -159,6 +176,7 @@ export default function WorkflowsDashboard() {
               title="Infra Plan Duration (minutes)"
               data={data.infraPlan}
               xKey="run_timestamp"
+              xValueFormatter={formatDate}
               lines={[
                 {
                   key: "duration_minutes",
@@ -171,6 +189,7 @@ export default function WorkflowsDashboard() {
               title="Infra Apply Duration (minutes)"
               data={data.infraApply}
               xKey="run_timestamp"
+              xValueFormatter={formatDate}
               lines={[
                 {
                   key: "duration_minutes",
