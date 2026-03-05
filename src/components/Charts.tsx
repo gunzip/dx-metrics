@@ -88,7 +88,7 @@ export function SimpleLineChart({
           <YAxis
             tick={{ fontSize: 11 }}
             stroke="#6b7280"
-            domain={[0, (max: number) => Math.ceil(max * 1.1)]}
+            domain={[0, "auto"]}
           />
           <Tooltip
             contentStyle={{
