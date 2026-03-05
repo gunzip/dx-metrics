@@ -23,7 +23,7 @@ Uses PostgreSQL for data storage and Recharts for dashboard visualization.
 1. **Copy environment file:**
 
 ```bash
-cp nextapp/.env.example .env
+cp .env.example .env
 ```
 
 2. **Edit `.env`** with your values:
@@ -40,7 +40,7 @@ docker compose up -d
 4. **Run database migrations:**
 
 ```bash
-cd nextapp && DATABASE_URL=postgresql://dxmetrics:dxmetrics@172.18.0.1:5432/dxmetrics npx drizzle-kit migrate
+DATABASE_URL=postgresql://dxmetrics:dxmetrics@172.18.0.1:5432/dxmetrics npx drizzle-kit migrate
 ```
 
 5. **Import data (incremental):**
