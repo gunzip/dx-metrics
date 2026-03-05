@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import {
   SimpleLineChart,
@@ -8,6 +7,7 @@ import {
   DataTable,
 } from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
+import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface WorkflowDashboardData {
   deployments: { run_week: string; moving_avg_deployment_freq: number }[];
@@ -38,12 +38,11 @@ interface WorkflowDashboardData {
 }
 
 export default function WorkflowsDashboard() {
-  const [repository, setRepository] = useState("dx");
-  const [days, setDays] = useState(120);
+  const { repository, days, setRepository, setDays } = useDashboardFilters();
 
   const { data, loading } = useDashboardData<WorkflowDashboardData>(
     "workflows",
-    { repository, days }
+    { repository, days },
   );
 
   // Pivot dxVsNonDx for chart
@@ -69,9 +68,7 @@ export default function WorkflowsDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
-        Workflow Metrics
-      </h2>
+      <h2 className="mb-4 text-xl font-bold text-gray-900">Workflow Metrics</h2>
       <DashboardFilters
         repository={repository}
         timeInterval={days}
@@ -135,9 +132,7 @@ export default function WorkflowsDashboard() {
               title="Pipeline Run Count"
               data={data.runCount}
               xKey="workflow_name"
-              bars={[
-                { key: "run_count", name: "Run Count", color: "#16a34a" },
-              ]}
+              bars={[{ key: "run_count", name: "Run Count", color: "#16a34a" }]}
               layout="vertical"
             />
             <SimpleBarChart

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { MetricCard } from "@/components/MetricCard";
 import {
@@ -9,6 +8,7 @@ import {
   DataTable,
 } from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
+import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface PrDashboardData {
   cards: {
@@ -36,8 +36,7 @@ interface PrDashboardData {
 }
 
 export default function PullRequestsDashboard() {
-  const [repository, setRepository] = useState("dx");
-  const [days, setDays] = useState(120);
+  const { repository, days, setRepository, setDays } = useDashboardFilters();
 
   const { data, loading } = useDashboardData<PrDashboardData>(
     "pull-requests",

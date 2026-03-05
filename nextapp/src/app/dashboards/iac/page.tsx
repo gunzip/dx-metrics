@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { SimpleLineChart, DataTable } from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
+import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface IacDashboardData {
   leadTimeMovingAvg: { date: string; rolling_lead_time_days: number }[];
@@ -23,8 +23,9 @@ interface IacDashboardData {
 }
 
 export default function IacDashboard() {
-  const [repository, setRepository] = useState("io-infra");
-  const [days, setDays] = useState(120);
+  const { repository, days, setRepository, setDays } = useDashboardFilters({
+    defaultRepository: "io-infra",
+  });
 
   const { data, loading } = useDashboardData<IacDashboardData>("iac", {
     repository,

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { SimplePieChart, DataTable } from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
+import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface DxAdoptionData {
   pipelineAdoption: { pipeline_type: string; pipeline_count: number }[];
@@ -17,7 +17,7 @@ interface DxAdoptionData {
 }
 
 export default function DxAdoptionDashboard() {
-  const [repository, setRepository] = useState("dx");
+  const { repository, setRepository } = useDashboardFilters();
 
   const { data, loading } = useDashboardData<DxAdoptionData>("dx-adoption", {
     repository,

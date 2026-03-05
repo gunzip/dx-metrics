@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { SimpleBarChart, DataTable } from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
+import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface DxTeamData {
   ioInfraPrs: { date: string; dx_pr: number; non_dx_pr: number }[];
@@ -22,7 +22,7 @@ interface DxTeamData {
 }
 
 export default function DxTeamDashboard() {
-  const [days, setDays] = useState(120);
+  const { days, setDays } = useDashboardFilters();
 
   const { data, loading } = useDashboardData<DxTeamData>("dx-team", { days });
 
