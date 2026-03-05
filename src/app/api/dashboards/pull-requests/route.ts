@@ -94,20 +94,22 @@ export async function GET(req: NextRequest) {
     const mergedPrs = await db.execute(sql`
       WITH date_series AS (
         SELECT generate_series(
-          CASE WHEN ${days} <= 60 THEN (NOW() - MAKE_INTERVAL(days => ${days}))::date
+          CASE WHEN ${days} < 240 THEN (NOW() - MAKE_INTERVAL(days => ${days}))::date
                ELSE date_trunc('week', (NOW() - MAKE_INTERVAL(days => ${days}))::date)::date END,
-          CASE WHEN ${days} <= 60 THEN CURRENT_DATE
+          CASE WHEN ${days} < 240 THEN CURRENT_DATE
                ELSE date_trunc('week', CURRENT_DATE)::date END,
-          CASE WHEN ${days} <= 60 THEN '1 day'::interval ELSE '7 days'::interval END
+          CASE WHEN ${days} < 240 THEN '1 day'::interval ELSE '7 days'::interval END
         )::date AS date
       ),
       pr_counts AS (
-        SELECT CASE WHEN ${days} <= 60 THEN pr.merged_at::date
+        SELECT CASE WHEN ${days} < 240 THEN pr.merged_at::date
           ELSE date_trunc('week', pr.merged_at)::date END AS pr_date,
           COUNT(*) AS pr_count
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
         WHERE r.full_name = ${fullName}
-          AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days}) AND pr.merged_at IS NOT NULL
+          AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND pr.merged_at <= NOW()
+          AND pr.merged_at IS NOT NULL
         GROUP BY pr_date
       )
       SELECT ds.date, COALESCE(pc.pr_count, 0) AS pr_count
@@ -137,19 +139,21 @@ export async function GET(req: NextRequest) {
     const newPrs = await db.execute(sql`
       WITH date_series AS (
         SELECT generate_series(
-          CASE WHEN ${days} <= 60 THEN (NOW() - MAKE_INTERVAL(days => ${days}))::date
+          CASE WHEN ${days} < 240 THEN (NOW() - MAKE_INTERVAL(days => ${days}))::date
                ELSE date_trunc('week', (NOW() - MAKE_INTERVAL(days => ${days}))::date)::date END,
-          CASE WHEN ${days} <= 60 THEN CURRENT_DATE
+          CASE WHEN ${days} < 240 THEN CURRENT_DATE
                ELSE date_trunc('week', CURRENT_DATE)::date END,
-          CASE WHEN ${days} <= 60 THEN '1 day'::interval ELSE '7 days'::interval END
+          CASE WHEN ${days} < 240 THEN '1 day'::interval ELSE '7 days'::interval END
         )::date AS date
       ),
       pr_counts AS (
-        SELECT CASE WHEN ${days} <= 60 THEN pr.created_at::date
+        SELECT CASE WHEN ${days} < 240 THEN pr.created_at::date
           ELSE date_trunc('week', pr.created_at)::date END AS pr_date,
           COUNT(*) AS pr_count
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
-        WHERE r.full_name = ${fullName} AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        WHERE r.full_name = ${fullName}
+          AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND pr.created_at <= NOW()
         GROUP BY pr_date
       )
       SELECT ds.date, COALESCE(pc.pr_count, 0) AS pr_count
@@ -186,6 +190,22 @@ export async function GET(req: NextRequest) {
         )::numeric, 2) AS rolling_avg_comments
       FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
       WHERE r.full_name = ${fullName} AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+      GROUP BY pr.created_at::date ORDER BY day
+    `);
+
+    const prCommentsBySize = await db.execute(sql`
+      SELECT pr.created_at::date AS day,
+        ROUND(
+          AVG(
+            AVG(pr.total_comments_count)::numeric / NULLIF(AVG(pr.additions)::numeric, 0)
+          ) OVER (
+            ORDER BY pr.created_at::date
+            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+          ), 2
+        ) AS rolling_avg_comments_per_addition
+      FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
+      WHERE r.full_name = ${fullName}
+        AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
       GROUP BY pr.created_at::date ORDER BY day
     `);
 
@@ -250,6 +270,9 @@ export async function GET(req: NextRequest) {
       cumulatedNewPrs: numericRows(cumulatedNewPrs.rows, ["cumulative_count"]),
       prSize: numericRows(prSize.rows, ["rolling_avg_additions"]),
       prComments: numericRows(prComments.rows, ["rolling_avg_comments"]),
+      prCommentsBySize: numericRows(prCommentsBySize.rows, [
+        "rolling_avg_comments_per_addition",
+      ]),
       prSizeDistribution: numericRows(prSizeDistribution.rows, [
         "pr_count",
         "avg_additions",

@@ -69,7 +69,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed' AND TRIM(wr.conclusion) = 'success'
-        AND wr.updated_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at <= CURRENT_DATE
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY workflow_name ORDER BY workflow_name
     `);
@@ -83,7 +84,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed' AND TRIM(wr.conclusion) = 'success'
-        AND wr.updated_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at <= CURRENT_DATE
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY workflow_name ORDER BY workflow_name
     `);
@@ -97,7 +99,8 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed' AND TRIM(wr.conclusion) = 'success'
-        AND wr.updated_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at <= CURRENT_DATE
         AND w.name NOT IN ('CodeQL', 'Labeler')
       GROUP BY workflow_name ORDER BY workflow_name
     `);
@@ -111,8 +114,9 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed'
-        AND wr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
-        AND w.pipeline LIKE '%infra_plan%' AND w.name != 'Labeler'
+        AND wr.created_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
+        AND wr.created_at <= CURRENT_DATE
+        AND w.pipeline LIKE '%infra_plan.yaml%' AND w.name != 'Labeler'
       ORDER BY run_timestamp
     `);
 
@@ -125,8 +129,9 @@ export async function GET(req: NextRequest) {
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
         AND wr.status = 'completed'
-        AND wr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
-        AND w.pipeline LIKE '%infra_apply%' AND w.name != 'Labeler'
+        AND wr.created_at >= CURRENT_DATE - MAKE_INTERVAL(days => ${days})
+        AND wr.created_at <= CURRENT_DATE
+        AND w.pipeline LIKE '%infra_apply.yaml%' AND w.name != 'Labeler'
       ORDER BY run_timestamp
     `);
 

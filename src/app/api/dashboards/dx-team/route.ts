@@ -59,8 +59,8 @@ export async function GET(req: NextRequest) {
       WHERE author IN (SELECT username FROM dx_team_members)
         AND committer_date >= NOW() - MAKE_INTERVAL(days => ${days})
         AND repository_full_name LIKE ${`${org}/%`}
-        AND repository_full_name NOT LIKE '%dx%'
-        AND repository_full_name NOT LIKE '%terraform%'
+        AND repository_full_name NOT LIKE '%pagopa-dx%'
+        AND repository_full_name NOT LIKE ${`${org}/terraform%`}
       GROUP BY author, repository_full_name ORDER BY author, repository_commits DESC
     `);
 
