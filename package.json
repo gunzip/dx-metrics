@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.0",
+    "terrawiz": "^1.0.0",
     "drizzle-orm": "^0.38.0",
     "js-yaml": "^4.1.1",
     "next": "^15.1.0",

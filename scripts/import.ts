@@ -22,6 +22,8 @@ import * as schema from "../src/db/schema";
 import fs from "fs";
 import yaml from "js-yaml";
 import path from "path";
+import { execSync } from "child_process";
+import os from "os";
 
 // --- CLI Args ---
 function printHelp() {
@@ -42,6 +44,7 @@ Options:
                               commits           Repository commits
                               code-search       Code search results (DX repo)
                               terraform-registry Terraform registry module releases
+                              terraform-modules Terraform module usage (via terrawiz)
                               tracker           Tracker CSV data (requires --tracker-csv)
 
   --tracker-csv <path>      Path to the tracker CSV file (used with --entity tracker)
@@ -715,6 +718,70 @@ async function importCodeSearch() {
   }
 }
 
+async function importTerraformModules(repoName: string) {
+  const fullName = `${ORGANIZATION}/${repoName}`;
+  console.log(`  Scanning Terraform modules for ${fullName} (terrawiz)...`);
+
+  interface TerrawizModule {
+    source: string;
+    sourceType: string;
+    version: string;
+    repository: string;
+    filePath: string;
+    lineNumber: number;
+  }
+
+  interface TerrawizOutput {
+    modules: TerrawizModule[];
+  }
+
+  let output: TerrawizOutput = { modules: [] };
+
+  const tmpFile = path.join(os.tmpdir(), `terrawiz-${repoName}-${Date.now()}.json`);
+  try {
+    execSync(
+      `npx --yes terrawiz scan github:${fullName} -f json -e ${tmpFile}`,
+      {
+        env: { ...process.env },
+        timeout: 5 * 60 * 1000, // 5 minutes per repo
+        maxBuffer: 50 * 1024 * 1024, // 50 MB
+        stdio: "pipe",
+      },
+    );
+    output = JSON.parse(fs.readFileSync(tmpFile, "utf-8")) as TerrawizOutput;
+  } catch (e: unknown) {
+    console.log(`    ⚠ terrawiz failed for ${fullName}: ${e}`);
+    return;
+  } finally {
+    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+  }
+
+  const modules = output.modules ?? [];
+  if (modules.length === 0) {
+    console.log(`    ⚠ No Terraform modules found in ${fullName}`);
+    return;
+  }
+
+  // Replace previous snapshot for this repo (handles deleted modules).
+  await db.execute(
+    sql`DELETE FROM terraform_modules WHERE repository = ${fullName}`,
+  );
+
+  let count = 0;
+  for (const mod of modules) {
+    await db
+      .insert(schema.terraformModules)
+      .values({
+        repository: fullName,
+        module: mod.source,
+        filePath: mod.filePath ?? null,
+      })
+      .onConflictDoNothing();
+    count++;
+  }
+  console.log(`    ✓ ${count} Terraform modules imported for ${fullName}`);
+}
+
 async function importTerraformRegistryReleases() {
   console.log(`  Importing Terraform registry releases...`);
 
@@ -1026,6 +1093,11 @@ async function main() {
     if (shouldRun("iac-pr")) {
       await runWithCheckpoint("iac-pr", repoName, () =>
         importIacPrLeadTime(repoName, since),
+      );
+    }
+    if (shouldRun("terraform-modules")) {
+      await runWithCheckpoint("terraform-modules", repoName, () =>
+        importTerraformModules(repoName),
       );
     }
   }
