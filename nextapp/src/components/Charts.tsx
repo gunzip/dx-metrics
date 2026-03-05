@@ -35,9 +35,15 @@ interface ChartWrapperProps {
   className?: string;
 }
 
-export function ChartWrapper({ title, children, className = "" }: ChartWrapperProps) {
+export function ChartWrapper({
+  title,
+  children,
+  className = "",
+}: ChartWrapperProps) {
   return (
-    <div className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}>
+    <div
+      className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}
+    >
       <h3 className="mb-4 text-sm font-medium text-gray-700">{title}</h3>
       <div className="h-72">{children}</div>
     </div>
@@ -107,12 +113,20 @@ export function SimpleBarChart({
   return (
     <ChartWrapper title={title} className={className}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout={layout === "vertical" ? "vertical" : "horizontal"}>
+        <BarChart
+          data={data}
+          layout={layout === "vertical" ? "vertical" : "horizontal"}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           {layout === "vertical" ? (
             <>
               <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis dataKey={xKey} type="category" tick={{ fontSize: 11 }} width={120} />
+              <YAxis
+                dataKey={xKey}
+                type="category"
+                tick={{ fontSize: 11 }}
+                width={120}
+              />
             </>
           ) : (
             <>
@@ -144,7 +158,11 @@ interface SimplePieChartProps {
   className?: string;
 }
 
-export function SimplePieChart({ title, data, className }: SimplePieChartProps) {
+export function SimplePieChart({
+  title,
+  data,
+  className,
+}: SimplePieChartProps) {
   return (
     <ChartWrapper title={title} className={className}>
       <ResponsiveContainer width="100%" height="100%">
@@ -179,9 +197,16 @@ interface DataTableProps {
   className?: string;
 }
 
-export function DataTable({ title, columns, data, className = "" }: DataTableProps) {
+export function DataTable({
+  title,
+  columns,
+  data,
+  className = "",
+}: DataTableProps) {
   return (
-    <div className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}>
+    <div
+      className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}
+    >
       <h3 className="mb-4 text-sm font-medium text-gray-700">{title}</h3>
       <div className="max-h-96 overflow-auto">
         <table className="min-w-full text-sm">
