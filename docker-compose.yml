@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: dxmetrics
+      POSTGRES_PASSWORD: dxmetrics
+      POSTGRES_DB: dxmetrics
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dxmetrics"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: ./nextapp
+      dockerfile: Dockerfile
+    ports:
+      - "8080:3000"
+    environment:
+      DATABASE_URL: postgresql://dxmetrics:dxmetrics@db:5432/dxmetrics
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      AUTH_SECRET: "local-dev-secret-not-for-production"
+      AUTH_GITHUB_ID: ${AUTH_GITHUB_ID:-unused}
+      AUTH_GITHUB_SECRET: ${AUTH_GITHUB_SECRET:-unused}
+      AUTH_TRUST_HOST: "true"
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      SKIP_AUTH: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

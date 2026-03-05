@@ -1,62 +1,46 @@
 {
-  "name": "Metrics Dev Container",
-  "build": {
-    "dockerfile": "../Dockerfile",
-    "context": ".."
-  },
-  "forwardPorts": [9193, 9033],
-  "portsAttributes": {
-    "9193": {
-      "label": "Steampipe Dashboard",
-      "onAutoForward": "notify"
+  "image": "mcr.microsoft.com/devcontainers/base:debian@sha256:da67c59f82e057e0ccb81ec7d13fb50464c26f477638018e6de1b2623a008a3a",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "installYarnUsingApt": false,
+      "pnpmVersion": "none",
+      "nvmInstallPath": "/opt/nvm"
     },
-    "9033": {
-      "label": "Powerpipe Dashboard",
-      "onAutoForward": "notify"
-    }
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers-extra/features/act:1": {},
+    "ghcr.io/devcontainers/features/copilot-cli:1": {}
   },
-  "postCreateCommand": "echo 'Dev container is ready!'",
-  "remoteUser": "appuser",
-  "workspaceFolder": "/app",
+  "postStartCommand": {
+    "set-workspace-as-safe-dir": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+  },
   "containerEnv": {
-    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
-    "STEAMPIPE_LOG": "info"
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0",
+    "NX_DAEMON": "true"
   },
   "customizations": {
     "vscode": {
       "extensions": [
+        "-vscjava.vscode-java-pack",
+        "-ms-dotnettools.csharp",
+        "-ms-azuretools.vscode-azureterraform",
+        "ms-azuretools.vscode-azure-github-copilot",
+        "ms-vscode.vscode-websearchforcopilot",
+        "ms-azuretools.vscode-azureterraform",
         "github.vscode-github-actions",
         "github.vscode-pull-request-github",
         "esbenp.prettier-vscode",
+        "unifiedjs.vscode-mdx",
         "EditorConfig.EditorConfig",
+        "bruno-api-client.bruno",
+        "vitest.explorer",
         "redhat.vscode-yaml",
         "dbaeumer.vscode-eslint",
         "github.copilot",
         "github.copilot-chat",
-        "ms-vscode.vscode-json",
-        "ms-python.python"
-      ],
-
-      "mcp": {
-        "servers": {
-          "playwright": {
-            "command": "npx",
-            "args": ["@playwright/mcp@latest"],
-            "type": "stdio"
-          },
-          "dx-docs": {
-            "url": "https://api.dev.dx.pagopa.it/mcp",
-            "type": "http",
-            "headers": {
-              "x-gh-pat": "${localEnv:GITHUB_TOKEN}"
-            }
-          }
-        }
-      },
-
-      "settings": {
-        "terminal.integrated.shell.linux": "/bin/bash"
-      }
+        "nrwl.angular-console"
+      ]
     }
   }
 }

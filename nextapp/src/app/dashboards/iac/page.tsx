@@ -1,0 +1,135 @@
+"use client";
+
+import { useState } from "react";
+import { DashboardFilters } from "@/components/DashboardFilters";
+import { SimpleLineChart, DataTable } from "@/components/Charts";
+import { useDashboardData } from "@/lib/useDashboardData";
+
+interface IacDashboardData {
+  leadTimeMovingAvg: { date: string; rolling_lead_time_days: number }[];
+  leadTimeTrend: { date: string; trend_line: number }[];
+  supervisedVsUnsupervised: {
+    run_date: string;
+    pr_type: string;
+    cumulative_count: number;
+  }[];
+  prsOverTime: { week: string; pr_count: number }[];
+  prsByReviewer: {
+    reviewer: string;
+    total_prs: number;
+    merged_prs: number;
+    avg_lead_time_days: number;
+  }[];
+}
+
+export default function IacDashboard() {
+  const [repository, setRepository] = useState("io-infra");
+  const [days, setDays] = useState(120);
+
+  const { data, loading } = useDashboardData<IacDashboardData>("iac", {
+    repository,
+    days,
+  });
+
+  // Pivot supervised vs unsupervised
+  const supervisedPivoted = (() => {
+    if (!data?.supervisedVsUnsupervised) return [];
+    const map = new Map<
+      string,
+      { run_date: string; supervised: number; unsupervised: number }
+    >();
+    for (const row of data.supervisedVsUnsupervised) {
+      const entry = map.get(row.run_date) || {
+        run_date: row.run_date,
+        supervised: 0,
+        unsupervised: 0,
+      };
+      if (row.pr_type === "Supervised PRs")
+        entry.supervised = Number(row.cumulative_count);
+      else entry.unsupervised = Number(row.cumulative_count);
+      map.set(row.run_date, entry);
+    }
+    return Array.from(map.values());
+  })();
+
+  return (
+    <div>
+      <h2 className="mb-4 text-xl font-bold text-gray-900">
+        IaC Pull Requests Metrics
+      </h2>
+      <DashboardFilters
+        repository={repository}
+        timeInterval={days}
+        onRepositoryChange={setRepository}
+        onTimeIntervalChange={setDays}
+      />
+
+      {loading && <p className="text-gray-500">Loading...</p>}
+
+      {data && (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <SimpleLineChart
+              title="IaC PR Lead Time (moving average)"
+              data={data.leadTimeMovingAvg}
+              xKey="date"
+              lines={[
+                {
+                  key: "rolling_lead_time_days",
+                  name: "Lead Time",
+                  color: "#2563eb",
+                },
+              ]}
+            />
+            <SimpleLineChart
+              title="IaC PR Lead Time (trend)"
+              data={data.leadTimeTrend}
+              xKey="date"
+              lines={[
+                { key: "trend_line", name: "Trend", color: "#dc2626" },
+              ]}
+            />
+            <SimpleLineChart
+              title="Supervised vs Unsupervised IaC PRs (Cumulative)"
+              data={supervisedPivoted}
+              xKey="run_date"
+              lines={[
+                {
+                  key: "supervised",
+                  name: "Supervised PRs",
+                  color: "#dc2626",
+                },
+                {
+                  key: "unsupervised",
+                  name: "Unsupervised PRs",
+                  color: "#16a34a",
+                },
+              ]}
+            />
+            <SimpleLineChart
+              title="IaC PRs Count Over Time"
+              data={data.prsOverTime}
+              xKey="week"
+              lines={[
+                { key: "pr_count", name: "PR Count", color: "#2563eb" },
+              ]}
+            />
+          </div>
+
+          <div className="mt-4">
+            <DataTable
+              title="IaC PRs by Reviewer"
+              columns={[
+                { key: "reviewer", label: "Reviewer" },
+                { key: "total_prs", label: "Total PRs" },
+                { key: "merged_prs", label: "Merged PRs" },
+                { key: "avg_lead_time_days", label: "Avg Lead Time (days)" },
+              ]}
+              data={data.prsByReviewer}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
