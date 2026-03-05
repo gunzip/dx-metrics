@@ -55,26 +55,27 @@ export async function GET(req: NextRequest) {
     `);
 
     const leadTimeTrend = await db.execute(sql`
-      WITH pr_lead_times AS (
-        SELECT pr.created_at::date AS created_date,
-          EXTRACT(EPOCH FROM (pr.merged_at - pr.created_at)) / 86400 AS lead_time_days,
-          ROW_NUMBER() OVER (ORDER BY pr.created_at::date) AS x
+      WITH weekly_avg AS (
+        SELECT DATE_TRUNC('week', pr.merged_at)::date AS week,
+          ROUND(AVG(EXTRACT(EPOCH FROM (pr.merged_at - pr.created_at)) / 86400)::numeric, 2) AS avg_lead_time_days,
+          ROW_NUMBER() OVER (ORDER BY DATE_TRUNC('week', pr.merged_at)::date) AS x
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
         WHERE r.full_name = ${fullName}
           AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
           AND pr.merged_at IS NOT NULL AND pr.created_at IS NOT NULL
           AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        GROUP BY DATE_TRUNC('week', pr.merged_at)::date
       ),
-      stats AS (SELECT COUNT(*) AS n, AVG(x) AS x_avg, AVG(lead_time_days) AS y_avg FROM pr_lead_times),
+      stats AS (SELECT COUNT(*) AS n, AVG(x) AS x_avg, AVG(avg_lead_time_days) AS y_avg FROM weekly_avg),
       regression AS (
-        SELECT CASE WHEN SUM(POWER(p.x - s.x_avg, 2)) != 0
-          THEN SUM((p.x - s.x_avg) * (p.lead_time_days - s.y_avg)) / SUM(POWER(p.x - s.x_avg, 2))
+        SELECT CASE WHEN SUM(POWER(w.x - s.x_avg, 2)) != 0
+          THEN SUM((w.x - s.x_avg) * (w.avg_lead_time_days - s.y_avg)) / SUM(POWER(w.x - s.x_avg, 2))
           ELSE 0 END AS slope, s.y_avg, s.x_avg
-        FROM pr_lead_times p CROSS JOIN stats s GROUP BY s.x_avg, s.y_avg
+        FROM weekly_avg w CROSS JOIN stats s GROUP BY s.x_avg, s.y_avg
       )
-      SELECT p.created_date AS date,
-        GREATEST(ROUND((r.slope * p.x + (r.y_avg - r.slope * r.x_avg))::numeric, 2), 0) AS trend_line
-      FROM pr_lead_times p CROSS JOIN regression r ORDER BY p.created_date
+      SELECT w.week AS date,
+        ROUND((r.slope * w.x + (r.y_avg - r.slope * r.x_avg))::numeric, 2) AS trend_line
+      FROM weekly_avg w CROSS JOIN regression r ORDER BY w.week
     `);
 
     const mergedPrs = await db.execute(sql`
