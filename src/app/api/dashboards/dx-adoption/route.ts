@@ -60,11 +60,79 @@ export async function GET(req: NextRequest) {
       ORDER BY module, CASE WHEN module LIKE '%pagopa-dx%' OR module LIKE '%pagopa/dx%' THEN 0 ELSE 1 END
     `);
 
+    // Version Drift: compare used version constraint vs latest available for DX modules
+    // tm.version is a Terraform constraint like "~> 2.1" — extract the major number for comparison
+    const versionDriftList = await db.execute(sql`
+      SELECT
+        tm.module AS module_name,
+        tm.version AS used_version,
+        trr.latest_version,
+        tm.file_path,
+        CASE
+          WHEN tm.version IS NULL OR trr.latest_version IS NULL THEN 'unknown'
+          WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
+               = (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'up-to-date'
+          WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
+               < (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'outdated'
+          ELSE 'unknown'
+        END AS drift_status
+      FROM terraform_modules tm
+      LEFT JOIN LATERAL (
+        SELECT latest_version FROM terraform_registry_releases trr
+        WHERE trr.module_name = SPLIT_PART(tm.module, '/', 2)
+        ORDER BY trr.major_version DESC
+        LIMIT 1
+      ) trr ON true
+      WHERE tm.repository = ${fullName}
+        AND (tm.module LIKE '%pagopa-dx%' OR tm.module LIKE '%pagopa/dx%')
+        AND tm.module NOT LIKE './%'
+        AND tm.module NOT LIKE '../%'
+      ORDER BY drift_status DESC, tm.module
+    `);
+
+    const versionDriftSummary = await db.execute(sql`
+      WITH drift AS (
+        SELECT
+          CASE
+            WHEN tm.version IS NULL OR trr.latest_version IS NULL THEN 'unknown'
+            WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
+                 = (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'up-to-date'
+            WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
+                 < (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'outdated'
+            ELSE 'unknown'
+          END AS drift_status
+        FROM terraform_modules tm
+        LEFT JOIN LATERAL (
+          SELECT latest_version FROM terraform_registry_releases trr
+          WHERE trr.module_name = SPLIT_PART(tm.module, '/', 2)
+          ORDER BY trr.major_version DESC
+          LIMIT 1
+        ) trr ON true
+        WHERE tm.repository = ${fullName}
+          AND (tm.module LIKE '%pagopa-dx%' OR tm.module LIKE '%pagopa/dx%')
+          AND tm.module NOT LIKE './%'
+          AND tm.module NOT LIKE '../%'
+      )
+      SELECT
+        COUNT(*) FILTER (WHERE drift_status = 'up-to-date') AS up_to_date,
+        COUNT(*) FILTER (WHERE drift_status = 'outdated') AS outdated,
+        COUNT(*) FILTER (WHERE drift_status = 'unknown') AS unknown,
+        COUNT(*) AS total
+      FROM drift
+    `);
+
     return NextResponse.json({
       pipelineAdoption: pipelineAdoption.rows,
       moduleAdoption: moduleAdoption.rows,
       workflowsList: workflowsList.rows,
       modulesList: modulesList.rows,
+      versionDriftList: versionDriftList.rows,
+      versionDriftSummary: {
+        upToDate: Number(versionDriftSummary.rows[0]?.up_to_date) || 0,
+        outdated: Number(versionDriftSummary.rows[0]?.outdated) || 0,
+        unknown: Number(versionDriftSummary.rows[0]?.unknown) || 0,
+        total: Number(versionDriftSummary.rows[0]?.total) || 0,
+      },
     });
   } catch (error) {
     console.error("DX Adoption dashboard error:", error);

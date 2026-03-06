@@ -38,6 +38,7 @@ Options:
                             Valid values:
                               all               Import everything
                               pull-requests     GitHub pull requests
+                              pr-reviews        GitHub pull request reviews
                               workflows         GitHub Actions workflow definitions
                               workflow-runs     GitHub Actions workflow run history
                               iac-pr            IaC pull request lead time
@@ -621,6 +622,73 @@ async function importIacPrLeadTime(repoName: string, since: string) {
   console.log(`    ✓ ${count} IaC PR lead times imported in ${elapsed}s`);
 }
 
+const BOT_LOGINS = new Set(["renovate-pagopa", "dependabot", "dx-pagopa-bot"]);
+
+async function importPullRequestReviews(repoName: string, since: string) {
+  const startTime = Date.now();
+  const repoId = await ensureRepo(repoName);
+  const fullName = `${ORGANIZATION}/${repoName}`;
+  console.log(`  Importing PR reviews for ${fullName}...`);
+
+  const prs = await db
+    .select({ id: schema.pullRequests.id, number: schema.pullRequests.number })
+    .from(schema.pullRequests)
+    .where(
+      sql`repository_id = ${repoId} AND created_at >= ${new Date(since)} AND merged_at IS NOT NULL`,
+    );
+
+  let count = 0;
+  let prIdx = 0;
+  for (const pr of prs) {
+    prIdx++;
+    if (prIdx % 50 === 0) {
+      process.stdout.write(`\r    Processing PR ${prIdx}/${prs.length}...`);
+    }
+    try {
+      const reviews = await octokit.rest.pulls.listReviews({
+        owner: ORGANIZATION,
+        repo: repoName,
+        pull_number: pr.number,
+        per_page: 100,
+      });
+      for (const review of reviews.data) {
+        const login = review.user?.login;
+        if (!login || BOT_LOGINS.has(login)) continue;
+        await db
+          .insert(schema.pullRequestReviews)
+          .values({
+            id: review.id,
+            pullRequestId: pr.id,
+            repositoryId: repoId,
+            reviewer: login,
+            state: review.state,
+            submittedAt: review.submitted_at
+              ? new Date(review.submitted_at)
+              : null,
+          })
+          .onConflictDoUpdate({
+            target: schema.pullRequestReviews.id,
+            set: {
+              state: review.state,
+              submittedAt: review.submitted_at
+                ? new Date(review.submitted_at)
+                : null,
+            },
+          });
+        count++;
+      }
+    } catch (e) {
+      console.log(`\n    ⚠ listReviews failed for PR #${pr.number}: ${e}`);
+    }
+    await sleep(100);
+  }
+  if (prIdx > 0) process.stdout.write(`\n`);
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  console.log(
+    `    ✓ ${count} reviews imported for ${prs.length} PRs in ${elapsed}s`,
+  );
+}
+
 async function importCommitsForMember(member: string, since: string) {
   const startTime = Date.now();
   const sinceDate = new Date(since);
@@ -785,6 +853,7 @@ async function importTerraformModules(repoName: string) {
         repository: fullName,
         module: mod.source,
         filePath: mod.filePath ?? null,
+        version: mod.version ?? null,
       })
       .onConflictDoNothing();
     count++;
@@ -859,10 +928,13 @@ async function importTerraformRegistryReleases() {
           : null;
         if (!publishedAt || isNaN(publishedAt.getTime())) continue;
 
-        const majorCount = sorted.filter((sv) => {
+        const majorVersionsList = sorted.filter((sv) => {
           const m = sv.match(/^v?(\d+)\./);
           return m && parseInt(m[1], 10) === major;
-        }).length;
+        });
+        const majorCount = majorVersionsList.length;
+        const latestVersion =
+          majorVersionsList[majorVersionsList.length - 1] ?? firstVer;
 
         await db
           .insert(schema.terraformRegistryReleases)
@@ -873,6 +945,7 @@ async function importTerraformRegistryReleases() {
             firstReleaseVersion: firstVer,
             releaseDate: publishedAt,
             releasesCount: majorCount,
+            latestVersion,
           })
           .onConflictDoUpdate({
             target: [
@@ -882,6 +955,7 @@ async function importTerraformRegistryReleases() {
             ],
             set: {
               releasesCount: majorCount,
+              latestVersion,
             },
           });
         totalCount++;
@@ -1151,6 +1225,11 @@ async function main() {
     if (shouldRun("terraform-modules")) {
       await runWithCheckpoint("terraform-modules", repoName, () =>
         importTerraformModules(repoName),
+      );
+    }
+    if (shouldRun("pr-reviews")) {
+      await runWithCheckpoint("pr-reviews", repoName, () =>
+        importPullRequestReviews(repoName, since),
       );
     }
   }

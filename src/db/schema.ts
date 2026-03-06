@@ -144,6 +144,28 @@ export const codeSearchResults = pgTable(
   ],
 );
 
+// --- Pull Request Reviews ---
+export const pullRequestReviews = pgTable(
+  "pull_request_reviews",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey(),
+    pullRequestId: bigint("pull_request_id", { mode: "number" })
+      .notNull()
+      .references(() => pullRequests.id),
+    repositoryId: integer("repository_id")
+      .notNull()
+      .references(() => repositories.id),
+    reviewer: text("reviewer"),
+    state: text("state"), // APPROVED | CHANGES_REQUESTED | COMMENTED | DISMISSED
+    submittedAt: timestamp("submitted_at"),
+  },
+  (t) => [
+    index("prr_pr_idx").on(t.pullRequestId),
+    index("prr_repo_idx").on(t.repositoryId),
+    index("prr_submitted_at_idx").on(t.submittedAt),
+  ],
+);
+
 // --- Terraform Modules ---
 export const terraformModules = pgTable(
   "terraform_modules",
@@ -152,6 +174,7 @@ export const terraformModules = pgTable(
     repository: text("repository").notNull(),
     module: text("module").notNull(),
     filePath: text("file_path"),
+    version: text("version"),
   },
   (t) => [
     uniqueIndex("tf_mod_repo_module_idx").on(
@@ -173,6 +196,7 @@ export const terraformRegistryReleases = pgTable(
     firstReleaseVersion: text("first_release_version").notNull(),
     releaseDate: timestamp("release_date"),
     releasesCount: integer("releases_count"),
+    latestVersion: text("latest_version"),
   },
   (t) => [
     uniqueIndex("tf_reg_mod_version_idx").on(

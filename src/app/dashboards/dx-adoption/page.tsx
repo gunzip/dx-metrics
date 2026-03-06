@@ -2,6 +2,7 @@
 
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { SimplePieChart, DataTable } from "@/components/Charts";
+import { MetricCard } from "@/components/MetricCard";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
@@ -14,6 +15,19 @@ interface DxAdoptionData {
     module_type: string;
     file_path: string;
   }[];
+  versionDriftList: {
+    module_name: string;
+    used_version: string | null;
+    latest_version: string | null;
+    file_path: string | null;
+    drift_status: string;
+  }[];
+  versionDriftSummary: {
+    upToDate: number;
+    outdated: number;
+    unknown: number;
+    total: number;
+  };
 }
 
 export default function DxAdoptionDashboard() {
@@ -34,6 +48,32 @@ export default function DxAdoptionDashboard() {
       name: r.module_type,
       value: Number(r.module_count),
     })) || [];
+
+  const driftSummary = data?.versionDriftSummary;
+  const driftUpToDatePct =
+    driftSummary && driftSummary.total > 0
+      ? Math.round((driftSummary.upToDate / driftSummary.total) * 100)
+      : null;
+
+  const driftStatusBadge = (status: string) => {
+    if (status === "up-to-date")
+      return (
+        <span className="inline-block rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+          🟢 up-to-date
+        </span>
+      );
+    if (status === "outdated")
+      return (
+        <span className="inline-block rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+          🟡 outdated
+        </span>
+      );
+    return (
+      <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+        ⚪ unknown
+      </span>
+    );
+  };
 
   return (
     <div>
@@ -77,6 +117,56 @@ export default function DxAdoptionDashboard() {
               data={data.modulesList}
             />
           </div>
+
+          {/* Version Drift */}
+          {data.versionDriftList.length > 0 && (
+            <>
+              <h3 className="mt-8 mb-4 text-base font-semibold text-gray-800">
+                Version Drift
+              </h3>
+              <div className="mb-4 grid grid-cols-4 gap-4">
+                <MetricCard
+                  label="DX Modules Up-to-Date"
+                  value={
+                    driftSummary
+                      ? `${driftSummary.upToDate}/${driftSummary.total}`
+                      : null
+                  }
+                />
+                <MetricCard
+                  label="Up-to-Date %"
+                  value={driftUpToDatePct}
+                  suffix="%"
+                />
+                <MetricCard
+                  label="Outdated Modules"
+                  value={driftSummary?.outdated ?? null}
+                />
+                <MetricCard
+                  label="Unknown Version"
+                  value={driftSummary?.unknown ?? null}
+                />
+              </div>
+              <DataTable
+                title="DX Module Version Drift"
+                columns={[
+                  { key: "module_name", label: "Module" },
+                  { key: "used_version", label: "Used Version" },
+                  { key: "latest_version", label: "Latest Version" },
+                  { key: "file_path", label: "File" },
+                  {
+                    key: "drift_status",
+                    label: "Status",
+                    renderCell: (value) =>
+                      driftStatusBadge(String(value ?? "unknown")),
+                  },
+                ]}
+                data={
+                  data.versionDriftList as unknown as Record<string, unknown>[]
+                }
+              />
+            </>
+          )}
         </>
       )}
     </div>
