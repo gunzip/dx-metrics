@@ -42,11 +42,13 @@ function StatCard({
   value: string | number | null;
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+    <div className="rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]">
+      <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
         {label}
       </p>
-      <p className="mt-1 text-3xl font-bold text-gray-900">{value ?? "—"}</p>
+      <p className="mt-2 text-3xl font-bold tracking-tighter text-[#e6edf3]">
+        {value ?? "—"}
+      </p>
     </div>
   );
 }
@@ -64,17 +66,27 @@ export default function ReleasesDashboard() {
   }));
 
   return (
-    <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
-        Terraform Registry Releases
-      </h2>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight text-[#e6edf3]">
+          Terraform Registry <span className="text-green-500">Releases</span>
+        </h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Tracking module evolution and versioning frequency.
+        </p>
+      </div>
 
-      {loading && <p className="text-gray-500">Loading...</p>}
+      {loading && (
+        <div className="flex items-center gap-2 text-gray-400">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+          <p className="text-sm font-medium">Fetching registry data...</p>
+        </div>
+      )}
 
       {data && (
-        <>
+        <div className="space-y-8">
           {/* Stats cards */}
-          <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard label="Modules" value={data.stats.totalModules} />
             <StatCard
               label="Major Versions"
@@ -84,52 +96,54 @@ export default function ReleasesDashboard() {
           </div>
 
           {/* Timeline chart */}
-          <div className="mb-6">
-            <SimpleLineChart
-              title="New Major Versions per Month"
-              data={releasesTimelineChartData}
-              xKey="month"
-              lines={[
-                {
-                  key: "major_versions",
-                  name: "New Major Versions",
-                  color: "#7c3aed",
-                },
-              ]}
-            />
-          </div>
+          <SimpleLineChart
+            title="Major Versions Trend (Monthly)"
+            data={releasesTimelineChartData}
+            xKey="month"
+            lines={[
+              {
+                key: "major_versions",
+                name: "New Majors",
+                color: "#238636",
+              },
+            ]}
+          />
 
           {/* Detail table */}
-          <div className="mt-4">
-            <DataTable
-              title="Module Details"
-              columns={[
-                {
-                  key: "module_name",
-                  label: "Module",
-                  renderCell: (value, row) => (
-                    <a
-                      href={`https://registry.terraform.io/modules/pagopa-dx/${value}/${row.provider}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {String(value)}
-                    </a>
-                  ),
-                },
-                { key: "provider", label: "Provider" },
-                { key: "major_versions_count", label: "Major Versions" },
-                { key: "latest_major", label: "Latest Major" },
-                { key: "total_releases", label: "Total Releases" },
-                { key: "first_release_date", label: "First Released" },
-                { key: "last_release_date", label: "Last Released" },
-                { key: "versions_detail", label: "Versions" },
-              ]}
-              data={data.modulesSummary as unknown as Record<string, unknown>[]}
-            />
-          </div>
-        </>
+          <DataTable
+            title="Module Catalog"
+            columns={[
+              {
+                key: "module_name",
+                label: "Module",
+                renderCell: (value, row) => (
+                  <a
+                    href={`https://registry.terraform.io/modules/pagopa-dx/${value}/${row.provider}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 font-semibold hover:text-blue-300 hover:underline"
+                  >
+                    {String(value)}
+                  </a>
+                ),
+              },
+              { key: "provider", label: "Provider" },
+              { key: "major_versions_count", label: "Majors" },
+              { key: "latest_major", label: "Latest" },
+              { key: "total_releases", label: "Releases" },
+              { key: "first_release_date", label: "First Release" },
+              { key: "last_release_date", label: "Last Release" },
+              {
+                key: "versions_detail",
+                label: "History",
+                renderCell: (v) => (
+                  <span className="font-mono text-xs opacity-80">{String(v)}</span>
+                ),
+              },
+            ]}
+            data={data.modulesSummary as unknown as Record<string, unknown>[]}
+          />
+        </div>
       )}
     </div>
   );
