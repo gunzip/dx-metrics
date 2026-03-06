@@ -19,6 +19,7 @@ interface DxTeamData {
     repository_commits: number;
   }[];
   dxAdoptingProjects: { repository: string }[];
+  dxPipelinesUsage: { pipeline_name: string; repository_count: number }[];
 }
 
 export default function DxTeamDashboard() {
@@ -88,11 +89,36 @@ export default function DxTeamDashboard() {
             />
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 grid grid-cols-2 gap-4">
             <DataTable
               title="Projects that adopt DX tooling"
               columns={[{ key: "repository", label: "Repository" }]}
               data={data.dxAdoptingProjects}
+            />
+            <DataTable
+              title="DX Pipelines usage"
+              columns={[
+                {
+                  key: "dx_path",
+                  label: "DX Path",
+                  renderCell: (val) => {
+                    const path = String(val);
+                    const encodedPath = encodeURIComponent(`"${path}"`);
+                    return (
+                      <a
+                        href={`https://github.com/search?q=org%3Apagopa+${encodedPath}&type=code`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {path}
+                      </a>
+                    );
+                  },
+                },
+                { key: "repository_count", label: "Repositories" },
+              ]}
+              data={data.dxPipelinesUsage}
             />
           </div>
         </>

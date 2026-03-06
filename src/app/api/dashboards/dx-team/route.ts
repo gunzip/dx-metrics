@@ -75,12 +75,34 @@ export async function GET(req: NextRequest) {
         AND repository_full_name NOT LIKE '%dx%'
     `);
 
+    // DX Pipelines usage across repositories
+    const dxPipelinesUsage = await db.execute(sql`
+      WITH pipeline_data AS (
+        SELECT 
+          repository_id,
+          (
+            SELECT (regexp_matches(pipeline, 'pagopa/dx/[^@\\s"''\\n]+', 'i'))[1]
+            LIMIT 1
+          ) as dx_path
+        FROM workflows
+        WHERE pipeline LIKE '%pagopa/dx%'
+      )
+      SELECT 
+        dx_path,
+        COUNT(DISTINCT repository_id) AS repository_count
+      FROM pipeline_data
+      WHERE dx_path IS NOT NULL
+      GROUP BY dx_path
+      ORDER BY repository_count DESC
+    `);
+
     return NextResponse.json({
       ioInfraPrs: ioInfraPrs.rows,
       dxCommits: dxCommits.rows,
       ioInfraPrTable: ioInfraPrTable.rows,
       commitsByRepo: commitsByRepo.rows,
       dxAdoptingProjects: dxAdoptingProjects.rows,
+      dxPipelinesUsage: dxPipelinesUsage.rows,
     });
   } catch (error) {
     console.error("DX Team dashboard error:", error);
