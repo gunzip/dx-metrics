@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
         WHERE r.full_name = ${`${org}/io-infra`}
           AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+          AND (pr.draft IS NULL OR pr.draft = 0)
         GROUP BY pr_date
       )
       SELECT ds.date, SUM(COALESCE(pc.dx_pr, 0)) AS dx_pr, SUM(COALESCE(pc.non_dx_pr, 0)) AS non_dx_pr
@@ -52,6 +53,7 @@ export async function GET(req: NextRequest) {
       FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
       WHERE r.full_name = ${`${org}/io-infra`}
         AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND (pr.draft IS NULL OR pr.draft = 0)
       ORDER BY pr.created_at DESC
     `);
 

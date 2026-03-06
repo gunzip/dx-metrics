@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
         AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.merged_at IS NOT NULL AND pr.created_at IS NOT NULL
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
     `);
 
     const totalPrs = await db.execute(sql`
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
       WHERE r.full_name = ${fullName}
         AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
     `);
 
     const totalComments = await db.execute(sql`
@@ -32,6 +34,7 @@ export async function GET(req: NextRequest) {
       WHERE r.full_name = ${fullName}
         AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
     `);
 
     const commentsPerPr = await db.execute(sql`
@@ -40,6 +43,7 @@ export async function GET(req: NextRequest) {
       WHERE r.full_name = ${fullName}
         AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
     `);
 
     const leadTimeMovingAvg = await db.execute(sql`
@@ -50,6 +54,7 @@ export async function GET(req: NextRequest) {
         AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.merged_at IS NOT NULL AND pr.created_at IS NOT NULL
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
       GROUP BY DATE_TRUNC('week', pr.merged_at)::date
       ORDER BY week
     `);
@@ -64,6 +69,7 @@ export async function GET(req: NextRequest) {
           AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
           AND pr.merged_at IS NOT NULL AND pr.created_at IS NOT NULL
           AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+          AND (pr.draft IS NULL OR pr.draft = 0)
         GROUP BY DATE_TRUNC('week', pr.merged_at)::date
       ),
       stats AS (SELECT COUNT(*) AS n, AVG(x) AS x_avg, AVG(avg_lead_time_days) AS y_avg FROM weekly_avg),
@@ -97,6 +103,7 @@ export async function GET(req: NextRequest) {
           AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
           AND pr.merged_at <= NOW()
           AND pr.merged_at IS NOT NULL
+          AND (pr.draft IS NULL OR pr.draft = 0)
         GROUP BY pr_date
       )
       SELECT ds.date, COALESCE(pc.pr_count, 0) AS pr_count
@@ -108,7 +115,8 @@ export async function GET(req: NextRequest) {
         SELECT generate_series(
           (SELECT MIN(created_at::date) FROM pull_requests pr
            JOIN repositories r ON pr.repository_id = r.id
-           WHERE r.full_name = ${fullName} AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})),
+           WHERE r.full_name = ${fullName} AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+           AND (pr.draft IS NULL OR pr.draft = 0)),
           CURRENT_DATE, '1 day'::interval
         )::date AS date
       ),
@@ -117,6 +125,7 @@ export async function GET(req: NextRequest) {
           COALESCE(pr.closed_at::date, CURRENT_DATE + 1) AS closed_date
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
         WHERE r.full_name = ${fullName} AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
+        AND (pr.draft IS NULL OR pr.draft = 0)
       )
       SELECT d.date, COUNT(*) FILTER (WHERE d.date >= p.created_date AND d.date < p.closed_date) AS open_prs
       FROM daily_counts d LEFT JOIN pr_status p ON d.date >= p.created_date AND d.date < p.closed_date
@@ -141,6 +150,7 @@ export async function GET(req: NextRequest) {
         WHERE r.full_name = ${fullName}
           AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
           AND pr.created_at <= NOW()
+          AND (pr.draft IS NULL OR pr.draft = 0)
         GROUP BY pr_date
       )
       SELECT ds.date, COALESCE(pc.pr_count, 0) AS pr_count
@@ -199,6 +209,7 @@ export async function GET(req: NextRequest) {
         FROM pull_requests pr JOIN repositories r ON pr.repository_id = r.id
         WHERE r.full_name = ${fullName}
           AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days}) AND pr.additions IS NOT NULL
+          AND (pr.draft IS NULL OR pr.draft = 0)
       )
       SELECT size_range, COUNT(*) AS pr_count, ROUND(AVG(additions)::numeric, 0) AS avg_additions
       FROM bucketed GROUP BY size_range, sort_order
@@ -213,6 +224,7 @@ export async function GET(req: NextRequest) {
         AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.merged_at IS NOT NULL AND pr.created_at IS NOT NULL
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
       ORDER BY lead_time_days DESC LIMIT 50
     `);
 

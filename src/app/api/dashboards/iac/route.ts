@@ -75,6 +75,7 @@ export async function GET(req: NextRequest) {
         WHERE ipr.repository_full_name = ${fullName}
           AND ipr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
           AND ipr.created_at IS NOT NULL AND ipr.title != 'Version Packages'
+          AND (pr.draft IS NULL OR pr.draft = 0)
       )
       SELECT run_date, pr_type,
         SUM(daily_count) OVER (PARTITION BY pr_type ORDER BY run_date) AS cumulative_count

@@ -278,6 +278,7 @@ async function importPullRequests(repoName: string, since: string) {
         mergedBy: null,
         additions: null,
         totalCommentsCount: null,
+        draft: pr.draft ? 1 : 0,
       })
       .onConflictDoUpdate({
         target: schema.pullRequests.id,
@@ -285,6 +286,7 @@ async function importPullRequests(repoName: string, since: string) {
           title: pr.title,
           closedAt: pr.closed_at ? new Date(pr.closed_at) : null,
           mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
+          draft: pr.draft ? 1 : 0,
         },
       });
     count++;

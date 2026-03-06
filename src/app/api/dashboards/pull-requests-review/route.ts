@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       WHERE r.full_name = ${fullName}
         AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
     `);
 
     const timeToFirstReviewTrend = await db.execute(sql`
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
       WHERE r.full_name = ${fullName}
         AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
       GROUP BY week
       ORDER BY week
     `);
@@ -61,6 +63,7 @@ export async function GET(req: NextRequest) {
       WHERE r.full_name = ${fullName}
         AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
     `);
 
     const timeToMergeTrend = await db.execute(sql`
@@ -78,6 +81,7 @@ export async function GET(req: NextRequest) {
       WHERE r.full_name = ${fullName}
         AND pr.merged_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
       GROUP BY week
       ORDER BY week
     `);
@@ -106,6 +110,7 @@ export async function GET(req: NextRequest) {
         AND prr.submitted_at >= NOW() - MAKE_INTERVAL(days => ${days})
         AND pr.author NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
         AND prr.reviewer NOT IN ('renovate-pagopa', 'dependabot', 'dx-pagopa-bot')
+        AND (pr.draft IS NULL OR pr.draft = 0)
       GROUP BY pr.author, prr.reviewer
       ORDER BY review_count DESC
     `);

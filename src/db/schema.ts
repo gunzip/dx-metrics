@@ -36,6 +36,7 @@ export const pullRequests = pgTable(
     mergedBy: text("merged_by"),
     additions: integer("additions"),
     totalCommentsCount: integer("total_comments_count"),
+    draft: integer("draft"), // 0: false, 1: true
   },
   (t) => [
     uniqueIndex("pr_repo_number_idx").on(t.repositoryId, t.number),
