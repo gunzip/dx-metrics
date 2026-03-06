@@ -23,8 +23,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} dark`}>
-      <body className="antialiased bg-[#0a0c10] text-gray-300 font-sans">{children}</body>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrainsMono.variable} dark`}
+    >
+      <body className="antialiased bg-[#0a0c10] text-gray-300 font-sans">
+        {children}
+      </body>
     </html>
   );
 }

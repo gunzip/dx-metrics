@@ -82,10 +82,7 @@ export default function PullRequestsDashboard() {
               value={data.cards.avgLeadTime}
               suffix="days"
             />
-            <MetricCard
-              label="Total PRs"
-              value={data.cards.totalPrs}
-            />
+            <MetricCard label="Total PRs" value={data.cards.totalPrs} />
             <MetricCard
               label="Total Comments"
               value={data.cards.totalComments}

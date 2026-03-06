@@ -43,7 +43,9 @@ export function ChartWrapper({
     <div
       className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">{title}</h3>
+      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">
+        {title}
+      </h3>
       <div className="w-full" style={{ height: "288px" }}>
         {children}
       </div>
@@ -78,7 +80,11 @@ export function SimpleLineChart({
         height={288}
         responsive
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#21262d"
+          vertical={false}
+        />
         <XAxis
           dataKey={xKey}
           tick={{
@@ -167,7 +173,11 @@ export function SimpleBarChart({
         height={288}
         responsive
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#21262d"
+          vertical={false}
+        />
         <XAxis
           dataKey={isVertical ? undefined : xKey}
           type={isVertical ? "number" : "category"}
@@ -209,7 +219,13 @@ export function SimpleBarChart({
           }}
           itemStyle={{ color: "#e6edf3" }}
         />
-        <Legend wrapperStyle={{ paddingTop: "20px", fontSize: "12px", color: "#8b949e" }} />
+        <Legend
+          wrapperStyle={{
+            paddingTop: "20px",
+            fontSize: "12px",
+            color: "#8b949e",
+          }}
+        />
         {bars.map((bar, i) => (
           <Bar
             key={bar.key}
@@ -328,7 +344,9 @@ export function DataTable({
     <div
       className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">{title}</h3>
+      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">
+        {title}
+      </h3>
       <div className="max-h-96 overflow-auto custom-scrollbar">
         <table className="min-w-full text-sm">
           <thead>
@@ -347,9 +365,15 @@ export function DataTable({
           </thead>
           <tbody>
             {sorted.map((row, i) => (
-              <tr key={i} className="border-b border-[#21262d] hover:bg-[#161b22] transition-colors group">
+              <tr
+                key={i}
+                className="border-b border-[#21262d] hover:bg-[#161b22] transition-colors group"
+              >
                 {columns.map((col) => (
-                  <td key={col.key} className="px-4 py-3 text-[#e6edf3] font-medium">
+                  <td
+                    key={col.key}
+                    className="px-4 py-3 text-[#e6edf3] font-medium"
+                  >
                     {col.renderCell
                       ? col.renderCell(row[col.key], row)
                       : String(row[col.key] ?? "")}

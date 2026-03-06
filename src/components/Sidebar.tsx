@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 const navItems = [
   { href: "/dashboards/pull-requests", label: "Pull Requests" },
@@ -16,6 +16,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-56 border-r border-[#30363d] bg-[#0d1117]">
@@ -28,10 +29,13 @@ export function Sidebar() {
         {navItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
+          const href = searchParams.toString()
+            ? `${item.href}?${searchParams.toString()}`
+            : item.href;
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={href}
               className={`block px-3 py-2 text-sm rounded-md transition-colors ${
                 isActive
                   ? "bg-[#21262d] font-semibold text-white border border-[#30363d]"
