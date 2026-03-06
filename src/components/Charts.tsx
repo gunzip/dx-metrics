@@ -8,11 +8,13 @@ import {
   Bar,
   PieChart,
   Pie,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
+  ResponsiveContainer,
 } from "recharts";
 
 const COLORS = [
@@ -232,26 +234,36 @@ export function SimplePieChart({
 }: SimplePieChartProps) {
   return (
     <ChartWrapper title={title} className={className}>
-      <PieChart width="100%" height={288} responsive>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          labelLine
-          label={({ name, percent }) =>
-            `${name} (${((percent || 0) * 100).toFixed(0)}%)`
-          }
-          outerRadius={80}
-          dataKey="value"
-        />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e5e7eb",
-            borderRadius: "6px",
-          }}
-        />
-      </PieChart>
+      <ResponsiveContainer width="100%" height={288}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine
+            label={({ name, percent }) =>
+              `${name} (${((percent || 0) * 100).toFixed(0)}%)`
+            }
+            outerRadius={80}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={COLORS[index % COLORS.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "white",
+              border: "1px solid #e5e7eb",
+              borderRadius: "6px",
+            }}
+          />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
     </ChartWrapper>
   );
 }
