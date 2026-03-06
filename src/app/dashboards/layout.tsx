@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 }) {
   const skipAuth = process.env.SKIP_AUTH === "true";
   const session = skipAuth ? null : await auth();
-  
+
   if (!skipAuth && !session?.user) {
     redirect("/sign-in");
   }
@@ -20,9 +20,9 @@ export default async function DashboardLayout({
   }
 
   return (
-    <ClientLayout 
-      session={session} 
-      skipAuth={skipAuth} 
+    <ClientLayout
+      session={session}
+      skipAuth={skipAuth}
       signOutAction={signOutAction}
     >
       {children}

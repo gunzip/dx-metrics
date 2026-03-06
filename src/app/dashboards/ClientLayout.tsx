@@ -8,7 +8,7 @@ export function ClientLayout({
   children,
   session,
   skipAuth,
-  signOutAction
+  signOutAction,
 }: {
   children: React.ReactNode;
   session: any;
@@ -39,10 +39,10 @@ export function ClientLayout({
   return (
     <div className="flex min-h-screen bg-[#0a0c10] font-sans">
       <Sidebar />
-      <div 
+      <div
         className={cn(
           "flex-1 transition-all duration-300 ease-in-out",
-          isCollapsed ? "ml-16" : "ml-56"
+          isCollapsed ? "ml-16" : "ml-56",
         )}
       >
         <header className="flex items-center justify-between border-b border-[#30363d] bg-[#0d1117]/80 backdrop-blur-md sticky top-0 z-10 px-6 py-4">

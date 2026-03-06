@@ -3,23 +3,31 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  GitPullRequest, 
-  MessageSquare, 
-  PlayCircle, 
-  Cloud, 
-  TrendingUp, 
-  Users, 
-  Activity, 
-  Ship
+import {
+  ChevronLeft,
+  ChevronRight,
+  GitPullRequest,
+  MessageSquare,
+  PlayCircle,
+  Cloud,
+  TrendingUp,
+  Users,
+  Activity,
+  Ship,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboards/pull-requests", label: "Pull Requests", icon: GitPullRequest },
-  { href: "/dashboards/pull-requests-review", label: "PR Reviews", icon: MessageSquare },
+  {
+    href: "/dashboards/pull-requests",
+    label: "Pull Requests",
+    icon: GitPullRequest,
+  },
+  {
+    href: "/dashboards/pull-requests-review",
+    label: "PR Reviews",
+    icon: MessageSquare,
+  },
   { href: "/dashboards/workflows", label: "Workflows", icon: PlayCircle },
   { href: "/dashboards/iac", label: "IaC PRs", icon: Cloud },
   { href: "/dashboards/dx-adoption", label: "DX Adoption", icon: TrendingUp },
@@ -50,27 +58,29 @@ export function Sidebar() {
   };
 
   return (
-    <aside 
+    <aside
       className={cn(
         "fixed left-0 top-0 h-screen border-r border-[#30363d] bg-[#0d1117] transition-all duration-300 ease-in-out z-20",
-        isCollapsed ? "w-16" : "w-56"
+        isCollapsed ? "w-16" : "w-56",
       )}
     >
-      <div className={cn(
-        "flex items-center p-4 h-16 border-b border-[#30363d] relative",
-        isCollapsed ? "justify-center" : "justify-between"
-      )}>
+      <div
+        className={cn(
+          "flex items-center p-4 h-16 border-b border-[#30363d] relative",
+          isCollapsed ? "justify-center" : "justify-between",
+        )}
+      >
         {!isCollapsed && (
           <h1 className="text-xl font-bold text-[#e6edf3] tracking-tight truncate">
             Engineering <span className="text-green-500 text-sm">Radar</span>
           </h1>
         )}
-        
+
         <button
           onClick={toggleSidebar}
           className={cn(
             "p-1.5 rounded-md hover:bg-[#21262d] text-gray-400 hover:text-white border border-[#30363d] transition-colors",
-            isCollapsed ? "" : ""
+            isCollapsed ? "" : "",
           )}
           title={isCollapsed ? "Expand" : "Collapse"}
         >
@@ -96,12 +106,17 @@ export function Sidebar() {
                 isActive
                   ? "bg-[#21262d] font-semibold text-white border border-[#30363d]"
                   : "text-gray-400 hover:text-white hover:bg-[#161b22]",
-                isCollapsed && "justify-center px-0"
+                isCollapsed && "justify-center px-0",
               )}
             >
-              <Icon size={18} className={cn(isActive ? "text-green-500" : "group-hover:text-white")} />
+              <Icon
+                size={18}
+                className={cn(
+                  isActive ? "text-green-500" : "group-hover:text-white",
+                )}
+              />
               {!isCollapsed && <span className="truncate">{item.label}</span>}
-              
+
               {isCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-[#21262d] border border-[#30363d] rounded text-white text-xs invisible group-hover:visible whitespace-nowrap z-50">
                   {item.label}
