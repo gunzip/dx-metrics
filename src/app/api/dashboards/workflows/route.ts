@@ -187,8 +187,9 @@ export async function GET(req: NextRequest) {
       JOIN workflows w ON wr.workflow_id = w.id
       JOIN repositories r ON wr.repository_id = r.id
       WHERE r.full_name = ${fullName}
-        AND wr.status = 'completed'
-        AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND wr.status = 'completed' AND TRIM(wr.conclusion) = 'success'
+        AND wr.updated_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND wr.updated_at <= ${maxDate}::timestamptz
         AND w.name NOT IN ('CodeQL', 'Labeler')
     `);
     const summary = summaryResult.rows[0];
