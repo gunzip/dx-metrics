@@ -225,7 +225,8 @@ export async function GET(req: NextRequest) {
       return rows.map((row) => {
         const out = { ...row };
         for (const k of keys) {
-          if (out[k] != null) out[k] = Number(out[k]) as T[string];
+          if (out[k] != null)
+            (out as Record<string, unknown>)[k] = Number(out[k]);
         }
         return out;
       });
