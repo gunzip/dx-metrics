@@ -12,10 +12,11 @@ export async function GET(req: NextRequest) {
     const ioInfraPrs = await db.execute(sql`
       WITH dx_members AS (SELECT username FROM dx_team_members),
       date_series AS (
-        SELECT generate_series(
+        SELECT (CASE WHEN ${days} < 240 THEN d::date ELSE date_trunc('week', d)::date END) AS date
+        FROM generate_series(
           (NOW() - MAKE_INTERVAL(days => ${days}))::date, CURRENT_DATE,
-          CASE WHEN ${days} < 240 THEN '1 day'::interval ELSE '7 days'::interval END
-        )::date AS date
+          CASE WHEN ${days} < 240 THEN '1 day'::interval ELSE '1 week'::interval END
+        ) d
       ),
       pr_counts AS (
         SELECT
@@ -28,8 +29,10 @@ export async function GET(req: NextRequest) {
           AND pr.created_at >= NOW() - MAKE_INTERVAL(days => ${days})
         GROUP BY pr_date
       )
-      SELECT ds.date, COALESCE(pc.dx_pr, 0) AS dx_pr, COALESCE(pc.non_dx_pr, 0) AS non_dx_pr
-      FROM date_series ds LEFT JOIN pr_counts pc ON ds.date = pc.pr_date ORDER BY ds.date
+      SELECT ds.date, SUM(COALESCE(pc.dx_pr, 0)) AS dx_pr, SUM(COALESCE(pc.non_dx_pr, 0)) AS non_dx_pr
+      FROM date_series ds LEFT JOIN pr_counts pc ON ds.date = pc.pr_date
+      GROUP BY ds.date
+      ORDER BY ds.date
     `);
 
     // DX Members Commits on Non-DX Repos

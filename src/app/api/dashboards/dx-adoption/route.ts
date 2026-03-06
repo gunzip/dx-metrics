@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     `);
 
     // Version Drift: compare used version constraint vs latest available for DX modules
-    // tm.version is a Terraform constraint like "~> 2.1" — extract the major number for comparison
+    // tm.version is a Terraform constraint like "~> 2.1" — extract major and minor for comparison
     const versionDriftList = await db.execute(sql`
       SELECT
         tm.module AS module_name,
@@ -70,17 +70,23 @@ export async function GET(req: NextRequest) {
         tm.file_path,
         CASE
           WHEN tm.version IS NULL OR trr.latest_version IS NULL THEN 'unknown'
-          WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
-               = (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'up-to-date'
-          WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
-               < (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'outdated'
+          WHEN (regexp_match(tm.version, '(\d+)\.(\d+)'))[1]::integer
+               = (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[1]::integer
+               AND (regexp_match(tm.version, '(\d+)\.(\d+)'))[2]::integer
+               >= (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[2]::integer THEN 'up-to-date'
+          WHEN (regexp_match(tm.version, '(\d+)\.(\d+)'))[1]::integer
+               < (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[1]::integer THEN 'outdated'
+          WHEN (regexp_match(tm.version, '(\d+)\.(\d+)'))[1]::integer
+               = (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[1]::integer
+               AND (regexp_match(tm.version, '(\d+)\.(\d+)'))[2]::integer
+               < (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[2]::integer THEN 'outdated'
           ELSE 'unknown'
         END AS drift_status
       FROM terraform_modules tm
       LEFT JOIN LATERAL (
         SELECT latest_version FROM terraform_registry_releases trr
         WHERE trr.module_name = SPLIT_PART(tm.module, '/', 2)
-        ORDER BY trr.major_version DESC
+        ORDER BY trr.major_version DESC, trr.minor_version DESC
         LIMIT 1
       ) trr ON true
       WHERE tm.repository = ${fullName}
@@ -95,17 +101,23 @@ export async function GET(req: NextRequest) {
         SELECT
           CASE
             WHEN tm.version IS NULL OR trr.latest_version IS NULL THEN 'unknown'
-            WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
-                 = (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'up-to-date'
-            WHEN (regexp_match(tm.version, '(\d+)'))[1]::integer
-                 < (regexp_match(trr.latest_version, '(\d+)'))[1]::integer THEN 'outdated'
+            WHEN (regexp_match(tm.version, '(\d+)\.(\d+)'))[1]::integer
+                 = (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[1]::integer
+                 AND (regexp_match(tm.version, '(\d+)\.(\d+)'))[2]::integer
+                 >= (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[2]::integer THEN 'up-to-date'
+            WHEN (regexp_match(tm.version, '(\d+)\.(\d+)'))[1]::integer
+                 < (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[1]::integer THEN 'outdated'
+            WHEN (regexp_match(tm.version, '(\d+)\.(\d+)'))[1]::integer
+                 = (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[1]::integer
+                 AND (regexp_match(tm.version, '(\d+)\.(\d+)'))[2]::integer
+                 < (regexp_match(trr.latest_version, '(\d+)\.(\d+)'))[2]::integer THEN 'outdated'
             ELSE 'unknown'
           END AS drift_status
         FROM terraform_modules tm
         LEFT JOIN LATERAL (
           SELECT latest_version FROM terraform_registry_releases trr
           WHERE trr.module_name = SPLIT_PART(tm.module, '/', 2)
-          ORDER BY trr.major_version DESC
+          ORDER BY trr.major_version DESC, trr.minor_version DESC
           LIMIT 1
         ) trr ON true
         WHERE tm.repository = ${fullName}
