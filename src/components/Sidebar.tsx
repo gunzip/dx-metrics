@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/dashboards/pull-requests", label: "Pull Requests" },
+  { href: "/dashboards/pull-requests-review", label: "PR Reviews" },
   { href: "/dashboards/workflows", label: "Workflows" },
   { href: "/dashboards/iac", label: "IaC PRs" },
   { href: "/dashboards/dx-adoption", label: "DX Adoption" },
@@ -23,7 +24,8 @@ export function Sidebar() {
       </div>
       <nav className="mt-4">
         {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive =
+            pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}

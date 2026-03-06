@@ -16,8 +16,6 @@ interface PrDashboardData {
     totalPrs: number | null;
     totalComments: number | null;
     commentsPerPr: number | null;
-    avgTimeToFirstReview: number | null;
-    avgTimeToMerge: number | null;
   };
   leadTimeMovingAvg: { week: string; avg_lead_time_days: number }[];
   leadTimeTrend: { date: string; trend_line: number }[];
@@ -39,19 +37,6 @@ interface PrDashboardData {
     created_at: string;
     merged_at: string;
   }[];
-  reviewDistribution: {
-    reviewer: string;
-    total_reviews: number;
-    approvals: number;
-    change_requests: number;
-  }[];
-  reviewMatrix: {
-    author: string;
-    reviewer: string;
-    review_count: number;
-  }[];
-  timeToFirstReviewTrend: { week: string; avg_hours_to_first_review: number }[];
-  timeToMergeTrend: { week: string; avg_hours_to_merge: number }[];
 }
 
 export default function PullRequestsDashboard() {
@@ -78,7 +63,7 @@ export default function PullRequestsDashboard() {
 
       {data && (
         <>
-          <div className="mb-6 grid grid-cols-3 gap-4">
+          <div className="mb-6 grid grid-cols-2 gap-4">
             <MetricCard
               label="Average Lead Time"
               value={data.cards.avgLeadTime}
@@ -95,16 +80,6 @@ export default function PullRequestsDashboard() {
             <MetricCard
               label="Comments per PR"
               value={data.cards.commentsPerPr}
-            />
-            <MetricCard
-              label="Avg Time to First Review"
-              value={data.cards.avgTimeToFirstReview}
-              suffix="hours"
-            />
-            <MetricCard
-              label="Avg Time to Merge"
-              value={data.cards.avgTimeToMerge}
-              suffix="hours"
             />
           </div>
 
@@ -208,94 +183,6 @@ export default function PullRequestsDashboard() {
               data={data.slowestPrs}
             />
           </div>
-
-          {/* Time to Review & Time to Merge */}
-          {(data.timeToFirstReviewTrend.length > 0 ||
-            data.timeToMergeTrend.length > 0) && (
-            <>
-              <h3 className="mt-8 mb-4 text-base font-semibold text-gray-800">
-                Review Timing
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <SimpleLineChart
-                  title="Avg Time to First Review (weekly, hours)"
-                  data={data.timeToFirstReviewTrend}
-                  xKey="week"
-                  lines={[
-                    {
-                      key: "avg_hours_to_first_review",
-                      name: "Hours to First Review",
-                      color: "#2563eb",
-                    },
-                  ]}
-                />
-                <SimpleLineChart
-                  title="Avg Time to Merge after Approval (weekly, hours)"
-                  data={data.timeToMergeTrend}
-                  xKey="week"
-                  lines={[
-                    {
-                      key: "avg_hours_to_merge",
-                      name: "Hours to Merge",
-                      color: "#dc2626",
-                    },
-                  ]}
-                />
-              </div>
-            </>
-          )}
-
-          {/* Code Review Distribution */}
-          {data.reviewDistribution.length > 0 && (
-            <>
-              <h3 className="mt-8 mb-4 text-base font-semibold text-gray-800">
-                Code Review Distribution
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <SimpleBarChart
-                  title="Reviews per Reviewer"
-                  data={data.reviewDistribution}
-                  xKey="reviewer"
-                  layout="vertical"
-                  bars={[
-                    {
-                      key: "approvals",
-                      name: "Approvals",
-                      color: "#16a34a",
-                      stackId: "reviews",
-                    },
-                    {
-                      key: "change_requests",
-                      name: "Change Requests",
-                      color: "#dc2626",
-                      stackId: "reviews",
-                    },
-                  ]}
-                />
-                <DataTable
-                  title="Reviewer Stats"
-                  columns={[
-                    { key: "reviewer", label: "Reviewer" },
-                    { key: "total_reviews", label: "Total" },
-                    { key: "approvals", label: "Approvals" },
-                    { key: "change_requests", label: "Changes Requested" },
-                  ]}
-                  data={data.reviewDistribution as Record<string, unknown>[]}
-                />
-              </div>
-              <div className="mt-4">
-                <DataTable
-                  title="Author → Reviewer Matrix"
-                  columns={[
-                    { key: "author", label: "Author" },
-                    { key: "reviewer", label: "Reviewer" },
-                    { key: "review_count", label: "Reviews" },
-                  ]}
-                  data={data.reviewMatrix as Record<string, unknown>[]}
-                />
-              </div>
-            </>
-          )}
         </>
       )}
     </div>
