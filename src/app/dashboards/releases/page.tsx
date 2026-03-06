@@ -137,7 +137,9 @@ export default function ReleasesDashboard() {
                 key: "versions_detail",
                 label: "History",
                 renderCell: (v) => (
-                  <span className="font-mono text-xs opacity-80">{String(v)}</span>
+                  <span className="font-mono text-xs opacity-80">
+                    {String(v)}
+                  </span>
                 ),
               },
             ]}
