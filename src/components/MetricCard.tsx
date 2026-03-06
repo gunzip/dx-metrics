@@ -13,7 +13,7 @@ export function MetricCard({ label, value, suffix }: MetricCardProps) {
         {label}
       </p>
       <div className="mt-2 flex items-baseline">
-        <p className="text-3xl font-bold text-[#e6edf3] tracking-tighter">
+        <p className="text-3xl font-bold text-[#e6edf3] tracking-tighter metric-value-glow">
           {value ?? "—"}
         </p>
         {suffix && (
