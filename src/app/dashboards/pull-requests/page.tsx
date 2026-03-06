@@ -48,10 +48,18 @@ export default function PullRequestsDashboard() {
   });
 
   return (
-    <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
-        Pull Requests Metrics
-      </h2>
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-[#e6edf3]">
+            Pull Request <span className="text-green-500">Insights</span>
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Analyzing engineering velocity and collaboration patterns.
+          </p>
+        </div>
+      </div>
+
       <DashboardFilters
         repository={repository}
         timeInterval={days}
@@ -59,18 +67,23 @@ export default function PullRequestsDashboard() {
         onTimeIntervalChange={setDays}
       />
 
-      {loading && <p className="text-gray-500">Loading...</p>}
+      {loading && (
+        <div className="flex items-center gap-2 text-gray-400">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+          <p className="text-sm font-medium">Synchronizing data...</p>
+        </div>
+      )}
 
       {data && (
-        <>
-          <div className="mb-6 grid grid-cols-2 gap-4">
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
-              label="Average Lead Time"
+              label="Avg Lead Time"
               value={data.cards.avgLeadTime}
               suffix="days"
             />
             <MetricCard
-              label="Total Pull Requests"
+              label="Total PRs"
               value={data.cards.totalPrs}
             />
             <MetricCard
@@ -78,26 +91,26 @@ export default function PullRequestsDashboard() {
               value={data.cards.totalComments}
             />
             <MetricCard
-              label="Comments per PR"
+              label="Comments / PR"
               value={data.cards.commentsPerPr}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <SimpleBarChart
-              title="Merged PR Lead Time (weekly average)"
+              title="Avg Lead Time (Weekly)"
               data={data.leadTimeMovingAvg}
               xKey="week"
               bars={[
                 {
                   key: "avg_lead_time_days",
-                  name: "Lead Time",
-                  color: "#2563eb",
+                  name: "Days",
+                  color: "#238636",
                 },
               ]}
             />
             <SimpleLineChart
-              title="Merged PR Lead Time (trend)"
+              title="Lead Time Trend"
               data={data.leadTimeTrend}
               xKey="date"
               lines={[{ key: "trend_line", name: "Trend", color: "#dc2626" }]}
@@ -170,7 +183,7 @@ export default function PullRequestsDashboard() {
             />
           </div>
 
-          <div className="mt-4">
+          <div className="mt-8">
             <DataTable
               title="Slowest Pull Requests"
               columns={[
@@ -183,7 +196,7 @@ export default function PullRequestsDashboard() {
               data={data.slowestPrs}
             />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

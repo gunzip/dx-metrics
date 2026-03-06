@@ -18,14 +18,14 @@ import {
 } from "recharts";
 
 const COLORS = [
-  "#2563eb",
-  "#dc2626",
-  "#16a34a",
-  "#ea580c",
-  "#7c3aed",
-  "#0891b2",
-  "#ca8a04",
-  "#be185d",
+  "#238636", // green
+  "#8b949e", // grey
+  "#1f6feb", // blue
+  "#d29922", // golden
+  "#a371f7", // purple
+  "#39d353", // bright green
+  "#58a6ff", // light blue
+  "#f85149", // red
 ];
 
 interface ChartWrapperProps {
@@ -41,9 +41,9 @@ export function ChartWrapper({
 }: ChartWrapperProps) {
   return (
     <div
-      className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}
+      className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-4 text-sm font-medium text-gray-700">{title}</h3>
+      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">{title}</h3>
       <div className="w-full" style={{ height: "288px" }}>
         {children}
       </div>
@@ -78,14 +78,15 @@ export function SimpleLineChart({
         height={288}
         responsive
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
         <XAxis
           dataKey={xKey}
           tick={{
             fontSize: 10,
+            fill: "#8b949e",
             textAnchor: data.length > 6 ? "end" : "middle",
           }}
-          stroke="#6b7280"
+          stroke="#30363d"
           tickFormatter={
             xValueFormatter ??
             ((v: string) => {
@@ -166,19 +167,20 @@ export function SimpleBarChart({
         height={288}
         responsive
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#21262d" vertical={false} />
         <XAxis
           dataKey={isVertical ? undefined : xKey}
           type={isVertical ? "number" : "category"}
           tick={{
             fontSize: isVertical ? 11 : 9,
+            fill: "#8b949e",
             ...(isVertical
               ? {}
               : {
                   textAnchor: data.length > 4 ? "end" : "middle",
                 }),
           }}
-          stroke="#6b7280"
+          stroke="#30363d"
           tickFormatter={xValueFormatter}
           {...(isVertical
             ? { domain: [0, (max: number) => Math.ceil(max * 1.1)] }
@@ -192,20 +194,22 @@ export function SimpleBarChart({
         <YAxis
           dataKey={isVertical ? xKey : undefined}
           type={isVertical ? "category" : "number"}
-          tick={{ fontSize: 11 }}
-          stroke="#6b7280"
+          tick={{ fontSize: 11, fill: "#8b949e" }}
+          stroke="#30363d"
           {...(isVertical
             ? { width: 120 }
             : { domain: [0, (max: number) => Math.ceil(max * 1.1)] })}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: "white",
-            border: "1px solid #e5e7eb",
-            borderRadius: "6px",
+            backgroundColor: "#161b22",
+            border: "1px solid #30363d",
+            borderRadius: "8px",
+            color: "#e6edf3",
           }}
+          itemStyle={{ color: "#e6edf3" }}
         />
-        <Legend wrapperStyle={{ paddingTop: "10px" }} />
+        <Legend wrapperStyle={{ paddingTop: "20px", fontSize: "12px", color: "#8b949e" }} />
         {bars.map((bar, i) => (
           <Bar
             key={bar.key}
@@ -256,12 +260,14 @@ export function SimplePieChart({
           </Pie>
           <Tooltip
             contentStyle={{
-              backgroundColor: "white",
-              border: "1px solid #e5e7eb",
-              borderRadius: "6px",
+              backgroundColor: "#161b22",
+              border: "1px solid #30363d",
+              borderRadius: "8px",
+              color: "#e6edf3",
             }}
+            itemStyle={{ color: "#e6edf3" }}
           />
-          <Legend />
+          <Legend wrapperStyle={{ fontSize: "12px", color: "#8b949e" }} />
         </PieChart>
       </ResponsiveContainer>
     </ChartWrapper>
@@ -320,30 +326,30 @@ export function DataTable({
 
   return (
     <div
-      className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}
+      className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-4 text-sm font-medium text-gray-700">{title}</h3>
-      <div className="max-h-96 overflow-auto">
+      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">{title}</h3>
+      <div className="max-h-96 overflow-auto custom-scrollbar">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-[#30363d]">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className="cursor-pointer select-none px-3 py-2 text-left font-medium text-gray-600 hover:text-gray-900"
+                  className="cursor-pointer select-none px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-[#e6edf3] transition-colors"
                 >
                   {col.label}
-                  {sortKey === col.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                  {sortKey === col.key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {sorted.map((row, i) => (
-              <tr key={i} className="border-b border-gray-100">
+              <tr key={i} className="border-b border-[#21262d] hover:bg-[#161b22] transition-colors group">
                 {columns.map((col) => (
-                  <td key={col.key} className="px-3 py-2 text-gray-800">
+                  <td key={col.key} className="px-4 py-3 text-[#e6edf3] font-medium">
                     {col.renderCell
                       ? col.renderCell(row[col.key], row)
                       : String(row[col.key] ?? "")}

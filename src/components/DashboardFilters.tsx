@@ -20,16 +20,16 @@ export function DashboardFilters({
   showTimeInterval = true,
 }: DashboardFiltersProps) {
   return (
-    <div className="mb-6 flex flex-wrap gap-4">
+    <div className="mb-8 flex flex-wrap gap-6 items-end">
       {showRepository && (
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
             Repository
           </label>
           <select
             value={repository}
             onChange={(e) => onRepositoryChange?.(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            className="block w-full rounded-lg border border-[#30363d] bg-[#0d1117] px-4 py-2 text-sm text-[#e6edf3] focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all cursor-pointer"
           >
             {REPOSITORIES.map((repo) => (
               <option key={repo} value={repo}>
@@ -40,14 +40,14 @@ export function DashboardFilters({
         </div>
       )}
       {showTimeInterval && (
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
             Time Interval
           </label>
           <select
             value={timeInterval}
             onChange={(e) => onTimeIntervalChange?.(Number(e.target.value))}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            className="block w-full rounded-lg border border-[#30363d] bg-[#0d1117] px-4 py-2 text-sm text-[#e6edf3] focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all cursor-pointer"
           >
             {TIME_INTERVALS.map((ti) => (
               <option key={ti.value} value={ti.value}>

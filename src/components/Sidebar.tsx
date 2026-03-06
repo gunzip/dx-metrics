@@ -18,11 +18,13 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-56 border-r border-gray-200 bg-white">
-      <div className="p-4">
-        <h1 className="text-lg font-bold text-gray-900">DX Metrics</h1>
+    <aside className="fixed left-0 top-0 h-screen w-56 border-r border-[#30363d] bg-[#0d1117]">
+      <div className="p-6">
+        <h1 className="text-xl font-bold text-[#e6edf3] tracking-tight">
+          Engineering <span className="text-green-500">Radar</span>
+        </h1>
       </div>
-      <nav className="mt-4">
+      <nav className="mt-2 px-3">
         {navItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
@@ -30,10 +32,10 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`block px-4 py-2 text-sm ${
+              className={`block px-3 py-2 text-sm rounded-md transition-colors ${
                 isActive
-                  ? "bg-blue-50 font-medium text-blue-700"
-                  : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-[#21262d] font-semibold text-white border border-[#30363d]"
+                  : "text-gray-400 hover:text-white hover:bg-[#161b22]"
               }`}
             >
               {item.label}

@@ -14,22 +14,24 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-[#0a0c10] font-sans">
       <Sidebar />
       <div className="ml-56 flex-1">
-        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+        <header className="flex items-center justify-between border-b border-[#30363d] bg-[#0d1117]/80 backdrop-blur-md sticky top-0 z-10 px-6 py-4">
           <div />
-          <div className="flex items-center gap-3">
-            {session?.user?.image && (
-              <img
-                src={session.user.image}
-                alt=""
-                className="h-8 w-8 rounded-full"
-              />
-            )}
-            <span className="text-sm text-gray-700">
-              {session?.user?.name ?? "Local Dev"}
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#21262d] border border-[#30363d]">
+              {session?.user?.image && (
+                <img
+                  src={session.user.image}
+                  alt=""
+                  className="h-6 w-6 rounded-full ring-1 ring-[#8b949e]/20"
+                />
+              )}
+              <span className="text-xs font-medium text-[#e6edf3]">
+                {session?.user?.name ?? "Local Dev"}
+              </span>
+            </div>
             {!skipAuth && (
               <form
                 action={async () => {
@@ -39,7 +41,7 @@ export default async function DashboardLayout({
               >
                 <button
                   type="submit"
-                  className="text-sm text-gray-500 hover:text-gray-700"
+                  className="text-xs font-semibold text-gray-500 hover:text-white transition-colors"
                 >
                   Sign out
                 </button>
@@ -47,7 +49,7 @@ export default async function DashboardLayout({
             )}
           </div>
         </header>
-        <main className="p-6">{children}</main>
+        <main className="p-8 max-w-[1600px] mx-auto">{children}</main>
       </div>
     </div>
   );
