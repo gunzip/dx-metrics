@@ -10,13 +10,11 @@ import {
   Area,
   PieChart,
   Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
 } from "recharts";
 
 const COLORS = [
@@ -73,45 +71,42 @@ export function SimpleLineChart({
 }: SimpleLineChartProps) {
   return (
     <ChartWrapper title={title} className={className}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={data}
-          margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis
-            dataKey={xKey}
-            tick={{ fontSize: 11 }}
-            stroke="#6b7280"
-            tickFormatter={xValueFormatter}
+      <LineChart
+        data={data}
+        margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
+        width={500}
+        height={300}
+        responsive
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis
+          dataKey={xKey}
+          tick={{ fontSize: 11 }}
+          stroke="#6b7280"
+          tickFormatter={xValueFormatter}
+        />
+        <YAxis tick={{ fontSize: 11 }} stroke="#6b7280" domain={[0, "auto"]} />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "6px",
+          }}
+        />
+        <Legend wrapperStyle={{ paddingTop: "10px" }} />
+        {lines.map((line, i) => (
+          <Line
+            key={line.key}
+            type="linear"
+            dataKey={line.key}
+            name={line.name}
+            stroke={line.color || COLORS[i % COLORS.length]}
+            strokeWidth={2}
+            dot={false}
+            isAnimationActive={false}
           />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            stroke="#6b7280"
-            domain={[0, "auto"]}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "white",
-              border: "1px solid #e5e7eb",
-              borderRadius: "6px",
-            }}
-          />
-          <Legend wrapperStyle={{ paddingTop: "10px" }} />
-          {lines.map((line, i) => (
-            <Line
-              key={line.key}
-              type="linear"
-              dataKey={line.key}
-              name={line.name}
-              stroke={line.color || COLORS[i % COLORS.length]}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+        ))}
+      </LineChart>
     </ChartWrapper>
   );
 }
@@ -140,61 +135,62 @@ export function SimpleBarChart({
 
   return (
     <ChartWrapper title={title} className={className}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          layout={isVertical ? "vertical" : "horizontal"}
-          margin={{
-            top: 10,
-            right: 30,
-            left: 10,
-            bottom: isVertical ? 10 : 20,
+      <BarChart
+        data={data}
+        layout={isVertical ? "vertical" : "horizontal"}
+        margin={{
+          top: 10,
+          right: 30,
+          left: 10,
+          bottom: isVertical ? 10 : 20,
+        }}
+        width={500}
+        height={300}
+        responsive
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis
+          dataKey={isVertical ? undefined : xKey}
+          type={isVertical ? "number" : "category"}
+          tick={{ fontSize: isVertical ? 11 : 9 }}
+          stroke="#6b7280"
+          tickFormatter={xValueFormatter}
+          {...(isVertical
+            ? { domain: [0, (max: number) => Math.ceil(max * 1.1)] }
+            : {
+                interval: Math.max(0, Math.floor(data.length / 8) - 1),
+                angle: data.length > 8 ? -45 : 0,
+                textAnchor: data.length > 8 ? "end" : "middle",
+                height: data.length > 8 ? 60 : 30,
+              })}
+        />
+        <YAxis
+          dataKey={isVertical ? xKey : undefined}
+          type={isVertical ? "category" : "number"}
+          tick={{ fontSize: 11 }}
+          stroke="#6b7280"
+          {...(isVertical
+            ? { width: 120 }
+            : { domain: [0, (max: number) => Math.ceil(max * 1.1)] })}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "6px",
           }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis
-            dataKey={isVertical ? undefined : xKey}
-            type={isVertical ? "number" : "category"}
-            tick={{ fontSize: isVertical ? 11 : 9 }}
-            stroke="#6b7280"
-            tickFormatter={xValueFormatter}
-            {...(isVertical
-              ? { domain: [0, (max: number) => Math.ceil(max * 1.1)] }
-              : {
-                  interval: Math.max(0, Math.floor(data.length / 8) - 1),
-                  angle: data.length > 8 ? -45 : 0,
-                  textAnchor: data.length > 8 ? "end" : "middle",
-                  height: data.length > 8 ? 60 : 30,
-                })}
+        />
+        <Legend wrapperStyle={{ paddingTop: "10px" }} />
+        {bars.map((bar, i) => (
+          <Bar
+            key={bar.key}
+            dataKey={bar.key}
+            name={bar.name}
+            fill={bar.color || COLORS[i % COLORS.length]}
+            stackId={bar.stackId}
           />
-          <YAxis
-            dataKey={isVertical ? xKey : undefined}
-            type={isVertical ? "category" : "number"}
-            tick={{ fontSize: 11 }}
-            stroke="#6b7280"
-            {...(isVertical
-              ? { width: 120 }
-              : { domain: [0, (max: number) => Math.ceil(max * 1.1)] })}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "white",
-              border: "1px solid #e5e7eb",
-              borderRadius: "6px",
-            }}
-          />
-          <Legend wrapperStyle={{ paddingTop: "10px" }} />
-          {bars.map((bar, i) => (
-            <Bar
-              key={bar.key}
-              dataKey={bar.key}
-              name={bar.name}
-              fill={bar.color || COLORS[i % COLORS.length]}
-              stackId={bar.stackId}
-            />
-          ))}
-        </BarChart>
-      </ResponsiveContainer>
+        ))}
+      </BarChart>
     </ChartWrapper>
   );
 }
@@ -213,32 +209,26 @@ export function SimplePieChart({
 }: SimplePieChartProps) {
   return (
     <ChartWrapper title={title} className={className}>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine
-            label={({ name, percent }) =>
-              `${name} (${(percent * 100).toFixed(0)}%)`
-            }
-            outerRadius={80}
-            dataKey="value"
-          >
-            {data.map((_, i) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "white",
-              border: "1px solid #e5e7eb",
-              borderRadius: "6px",
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
+      <PieChart width={300} height={300} responsive>
+        <Pie
+          data={data}
+          cx="50%"
+          cy="50%"
+          labelLine
+          label={({ name, percent }) =>
+            `${name} (${((percent || 0) * 100).toFixed(0)}%)`
+          }
+          outerRadius={80}
+          dataKey="value"
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "white",
+            border: "1px solid #e5e7eb",
+            borderRadius: "6px",
+          }}
+        />
+      </PieChart>
     </ChartWrapper>
   );
 }
