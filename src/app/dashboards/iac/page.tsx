@@ -93,6 +93,16 @@ export default function IacDashboard() {
                   color: "#2563eb",
                 },
               ]}
+              xValueFormatter={(v: string) => {
+                // Shorten "2025-11-10" to "Nov 10"
+                const d = new Date(v);
+                return isNaN(d.getTime())
+                  ? v
+                  : d.toLocaleDateString("en", {
+                      month: "short",
+                      day: "numeric",
+                    });
+              }}
             />
             <SimpleLineChart
               title="IaC PR Lead Time (trend)"

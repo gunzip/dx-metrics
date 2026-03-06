@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { DX_TEAM_MEMBERS } from "@/lib/config";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -56,21 +57,31 @@ export async function GET(req: NextRequest) {
     `);
 
     // Supervised vs Unsupervised IaC PRs (cumulative)
+    // A PR is "supervised" when authored by a DX team member OR merged/reviewed by one.
+    const dxMembers = DX_TEAM_MEMBERS;
+    const dxMembersSql = sql.join(
+      dxMembers.map((m) => sql`${m}`),
+      sql`, `,
+    );
     const supervisedVsUnsupervised = await db.execute(sql`
+      WITH classified AS (
+        SELECT ipr.created_at::date AS run_date,
+          CASE WHEN ipr.author IN (${dxMembersSql})
+                    OR pr.merged_by IN (${dxMembersSql})
+               THEN 'Supervised PRs'
+               ELSE 'Unsupervised PRs' END AS pr_type
+        FROM iac_pr_lead_times ipr
+        LEFT JOIN pull_requests pr ON pr.repository_id = ipr.repository_id AND pr.number = ipr.pr_number
+        WHERE ipr.repository_full_name = ${fullName}
+          AND ipr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+          AND ipr.created_at IS NOT NULL AND ipr.title != 'Version Packages'
+      )
       SELECT run_date, pr_type,
         SUM(daily_count) OVER (PARTITION BY pr_type ORDER BY run_date) AS cumulative_count
       FROM (
-        SELECT created_at::date AS run_date,
-          CASE WHEN COALESCE(array_length(target_authors, 1), 0) > 0 THEN 'Supervised PRs'
-            ELSE 'Unsupervised PRs' END AS pr_type,
-          COUNT(*) AS daily_count
-        FROM iac_pr_lead_times
-        WHERE repository_full_name = ${fullName}
-          AND created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
-          AND created_at IS NOT NULL AND title != 'Version Packages'
-        GROUP BY created_at::date,
-          CASE WHEN COALESCE(array_length(target_authors, 1), 0) > 0 THEN 'Supervised PRs'
-            ELSE 'Unsupervised PRs' END
+        SELECT run_date, pr_type, COUNT(*) AS daily_count
+        FROM classified
+        GROUP BY run_date, pr_type
       ) daily_counts ORDER BY run_date, pr_type
     `);
 
@@ -85,23 +96,32 @@ export async function GET(req: NextRequest) {
       GROUP BY DATE_TRUNC('week', created_at)::date ORDER BY week
     `);
 
-    // IaC PRs by Reviewer
+    // IaC PRs by DX team member (authored or reviewed/merged)
     const prsByReviewer = await db.execute(sql`
-      WITH pr_reviewers AS (
-        SELECT repository_full_name, created_at, merged_at, title,
-          unnest(target_authors) AS reviewer
-        FROM iac_pr_lead_times
-        WHERE repository_full_name = ${fullName}
-          AND created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
-          AND created_at IS NOT NULL AND title != 'Version Packages'
-          AND COALESCE(array_length(target_authors, 1), 0) > 0
+      WITH base AS (
+        SELECT DISTINCT ipr.pr_number, ipr.author, ipr.created_at, ipr.merged_at, pr.merged_by
+        FROM iac_pr_lead_times ipr
+        LEFT JOIN pull_requests pr ON pr.repository_id = ipr.repository_id AND pr.number = ipr.pr_number
+        WHERE ipr.repository_full_name = ${fullName}
+          AND ipr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+          AND ipr.created_at IS NOT NULL AND ipr.title != 'Version Packages'
+      ),
+      expanded AS (
+        SELECT pr_number, created_at, merged_at,
+          UNNEST(ARRAY[
+            CASE WHEN author IN (${dxMembersSql}) THEN author END,
+            CASE WHEN merged_by IN (${dxMembersSql}) AND merged_by != author THEN merged_by END
+          ]) AS member
+        FROM base
       )
-      SELECT reviewer, COUNT(*) AS total_prs,
+      SELECT member AS reviewer,
+        COUNT(*) AS total_prs,
         COUNT(*) FILTER (WHERE merged_at IS NOT NULL) AS merged_prs,
         ROUND(AVG(CASE WHEN merged_at IS NOT NULL
           THEN EXTRACT(EPOCH FROM (merged_at - created_at)) / 86400 END)::numeric, 2) AS avg_lead_time_days
-      FROM pr_reviewers WHERE reviewer != 'web-flow'
-      GROUP BY reviewer ORDER BY total_prs DESC
+      FROM expanded
+      WHERE member IS NOT NULL
+      GROUP BY member ORDER BY total_prs DESC
     `);
 
     return NextResponse.json({

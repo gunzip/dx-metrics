@@ -6,8 +6,6 @@ import {
   Line,
   BarChart,
   Bar,
-  AreaChart,
-  Area,
   PieChart,
   Pie,
   XAxis,
@@ -44,7 +42,7 @@ export function ChartWrapper({
       className={`rounded-lg border border-gray-200 bg-white p-4 shadow-sm ${className}`}
     >
       <h3 className="mb-4 text-sm font-medium text-gray-700">{title}</h3>
-      <div className="w-full" style={{ height: "288px", overflow: "hidden" }}>
+      <div className="w-full" style={{ height: "288px" }}>
         {children}
       </div>
     </div>
@@ -73,17 +71,35 @@ export function SimpleLineChart({
     <ChartWrapper title={title} className={className}>
       <LineChart
         data={data}
-        margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
-        width={500}
-        height={300}
+        margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+        width="100%"
+        height={288}
         responsive
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis
           dataKey={xKey}
-          tick={{ fontSize: 11 }}
+          tick={{
+            fontSize: 10,
+            textAnchor: data.length > 6 ? "end" : "middle",
+          }}
           stroke="#6b7280"
-          tickFormatter={xValueFormatter}
+          tickFormatter={
+            xValueFormatter ??
+            ((v: string) => {
+              const d = new Date(v);
+              return isNaN(d.getTime())
+                ? v
+                : d.toLocaleDateString("en", {
+                    month: "short",
+                    day: "numeric",
+                  });
+            })
+          }
+          interval={Math.max(0, Math.floor(data.length / 8) - 1)}
+          angle={data.length > 6 ? -35 : 0}
+          tickMargin={data.length > 6 ? 15 : 0}
+          height={data.length > 6 ? 70 : 30}
         />
         <YAxis tick={{ fontSize: 11 }} stroke="#6b7280" domain={[0, "auto"]} />
         <Tooltip
@@ -142,26 +158,33 @@ export function SimpleBarChart({
           top: 10,
           right: 30,
           left: 10,
-          bottom: isVertical ? 10 : 20,
+          bottom: isVertical ? 10 : 5,
         }}
-        width={500}
-        height={300}
+        width="100%"
+        height={288}
         responsive
       >
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis
           dataKey={isVertical ? undefined : xKey}
           type={isVertical ? "number" : "category"}
-          tick={{ fontSize: isVertical ? 11 : 9 }}
+          tick={{
+            fontSize: isVertical ? 11 : 9,
+            ...(isVertical
+              ? {}
+              : {
+                  textAnchor: data.length > 4 ? "end" : "middle",
+                }),
+          }}
           stroke="#6b7280"
           tickFormatter={xValueFormatter}
           {...(isVertical
             ? { domain: [0, (max: number) => Math.ceil(max * 1.1)] }
             : {
                 interval: Math.max(0, Math.floor(data.length / 8) - 1),
-                angle: data.length > 8 ? -45 : 0,
-                textAnchor: data.length > 8 ? "end" : "middle",
-                height: data.length > 8 ? 60 : 30,
+                angle: data.length > 4 ? -45 : 0,
+                tickMargin: data.length > 4 ? 15 : 0,
+                height: data.length > 4 ? 80 : 30,
               })}
         />
         <YAxis
@@ -209,7 +232,7 @@ export function SimplePieChart({
 }: SimplePieChartProps) {
   return (
     <ChartWrapper title={title} className={className}>
-      <PieChart width={300} height={300} responsive>
+      <PieChart width="100%" height={288} responsive>
         <Pie
           data={data}
           cx="50%"
