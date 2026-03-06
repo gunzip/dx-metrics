@@ -12,16 +12,19 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.0",
-    "terrawiz": "^1.0.0",
+    "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.0",
     "js-yaml": "^4.1.1",
+    "lucide-react": "^0.577.0",
     "next": "^15.1.0",
     "next-auth": "^5.0.0-beta.25",
     "octokit": "^3.2.2",
     "pg": "^8.13.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^3.5.0",
+    "terrawiz": "^1.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
