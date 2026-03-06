@@ -6,10 +6,17 @@ import {
   SimpleBarChart,
   DataTable,
 } from "@/components/Charts";
+import { MetricCard } from "@/components/MetricCard";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
 
 interface WorkflowDashboardData {
+  summary: {
+    total_pipelines: number;
+    avg_duration_minutes: number;
+    total_duration_minutes: number;
+    first_pipeline_date: string;
+  };
   deployments: { run_week: string; weekly_deployment_count: number }[];
   dxVsNonDx: {
     run_date: string;
@@ -102,6 +109,35 @@ export default function WorkflowsDashboard() {
 
       {data && (
         <>
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              label="First Run"
+              value={formatDate(data.summary.first_pipeline_date)}
+            />
+            <MetricCard
+              label="Runs Count"
+              value={data.summary.total_pipelines}
+            />
+            <MetricCard
+              label="Average Duration"
+              value={
+                data.summary.avg_duration_minutes !== null
+                  ? Number(data.summary.avg_duration_minutes).toFixed(1)
+                  : "—"
+              }
+              suffix="min"
+            />
+            <MetricCard
+              label="Total Duration"
+              value={
+                data.summary.total_duration_minutes !== null
+                  ? Number(data.summary.total_duration_minutes).toFixed(0)
+                  : "—"
+              }
+              suffix="min"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <SimpleBarChart
               title="Deployments to Production (weekly)"

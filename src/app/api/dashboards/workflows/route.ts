@@ -176,7 +176,25 @@ export async function GET(req: NextRequest) {
       GROUP BY w.name ORDER BY total_runs DESC
     `);
 
+    // Global Summary
+    const summaryResult = await db.execute(sql`
+      SELECT
+        COUNT(*)::int AS total_pipelines,
+        AVG(EXTRACT(EPOCH FROM (wr.updated_at - wr.created_at))) / 60 AS avg_duration_minutes,
+        SUM(EXTRACT(EPOCH FROM (wr.updated_at - wr.created_at))) / 60 AS total_duration_minutes,
+        MIN(wr.created_at) AS first_pipeline_date
+      FROM workflow_runs wr
+      JOIN workflows w ON wr.workflow_id = w.id
+      JOIN repositories r ON wr.repository_id = r.id
+      WHERE r.full_name = ${fullName}
+        AND wr.status = 'completed'
+        AND wr.created_at >= ${maxDate}::timestamptz - MAKE_INTERVAL(days => ${days})
+        AND w.name NOT IN ('CodeQL', 'Labeler')
+    `);
+    const summary = summaryResult.rows[0];
+
     return NextResponse.json({
+      summary,
       deployments: coerceNumbers(deployments.rows as Record<string, unknown>[]),
       dxVsNonDx: coerceNumbers(dxVsNonDx.rows as Record<string, unknown>[]),
       failures: coerceNumbers(failures.rows as Record<string, unknown>[]),
