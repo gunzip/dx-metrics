@@ -77,7 +77,7 @@ export default function DxAdoptionDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
+      <h2 className="mb-4 text-xl font-bold text-white">
         DX Tools Adoption Metrics
       </h2>
       <DashboardFilters
@@ -121,7 +121,7 @@ export default function DxAdoptionDashboard() {
           {/* Version Drift */}
           {data.versionDriftList.length > 0 && (
             <>
-              <h3 className="mt-8 mb-4 text-base font-semibold text-gray-800">
+              <h3 className="mt-8 mb-4 text-base font-semibold text-white">
                 Version Drift
               </h3>
               <div className="mb-4 grid grid-cols-4 gap-4">

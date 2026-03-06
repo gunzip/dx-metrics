@@ -43,7 +43,7 @@ export default function PullRequestsReviewDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
+      <h2 className="mb-4 text-xl font-bold text-white">
         Pull Requests Review
       </h2>
       <DashboardFilters
@@ -74,7 +74,7 @@ export default function PullRequestsReviewDashboard() {
           {(data.timeToFirstReviewTrend.length > 0 ||
             data.timeToMergeTrend.length > 0) && (
             <>
-              <h3 className="mt-2 mb-4 text-base font-semibold text-gray-800">
+              <h3 className="mt-2 mb-4 text-base font-semibold text-white">
                 Review Timing
               </h3>
               <div className="grid grid-cols-2 gap-4">
@@ -109,7 +109,7 @@ export default function PullRequestsReviewDashboard() {
           {/* Code Review Distribution */}
           {data.reviewDistribution.length > 0 && (
             <>
-              <h3 className="mt-8 mb-4 text-base font-semibold text-gray-800">
+              <h3 className="mt-8 mb-4 text-base font-semibold text-white">
                 Code Review Distribution
               </h3>
               <div className="grid grid-cols-2 gap-4">

@@ -67,7 +67,7 @@ export default function IacDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
+      <h2 className="mb-4 text-xl font-bold text-white">
         IaC Pull Requests Metrics
       </h2>
       <DashboardFilters

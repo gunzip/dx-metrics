@@ -97,7 +97,7 @@ export default function WorkflowsDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">Workflow Metrics</h2>
+      <h2 className="mb-4 text-xl font-bold text-white">Workflow Metrics</h2>
       <DashboardFilters
         repository={repository}
         timeInterval={days}

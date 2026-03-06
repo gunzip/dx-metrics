@@ -43,7 +43,7 @@ function StatCard({
 }) {
   return (
     <div className="rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]">
-      <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
+      <p className="text-xs font-medium uppercase tracking-wider text-white">
         {label}
       </p>
       <p className="mt-2 text-3xl font-bold tracking-tighter text-[#e6edf3]">

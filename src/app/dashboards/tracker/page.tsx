@@ -25,7 +25,7 @@ export default function TrackerDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-gray-900">
+      <h2 className="mb-4 text-xl font-bold text-white">
         Team DX Requests Metrics
       </h2>
 

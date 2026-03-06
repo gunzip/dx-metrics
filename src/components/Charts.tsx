@@ -43,7 +43,7 @@ export function ChartWrapper({
     <div
       className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">
+      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-white">
         {title}
       </h3>
       <div className="w-full" style={{ height: "288px" }}>
@@ -356,7 +356,7 @@ export function DataTable({
     <div
       className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-gray-500">
+      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-white">
         {title}
       </h3>
       <div className="max-h-96 overflow-auto custom-scrollbar">
@@ -367,7 +367,7 @@ export function DataTable({
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className="cursor-pointer select-none px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-[#e6edf3] transition-colors"
+                  className="cursor-pointer select-none px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-white hover:text-[#e6edf3] transition-colors"
                 >
                   {col.label}
                   {sortKey === col.key ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
