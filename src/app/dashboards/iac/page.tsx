@@ -6,8 +6,10 @@ import {
   SimpleBarChart,
   DataTable,
 } from "@/components/Charts";
+import TooltipIcon from "@/components/TooltipIcon";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
+import { tooltipContent } from "@/lib/tooltip-content";
 
 interface IacDashboardData {
   leadTimeMovingAvg: { week: string; avg_lead_time_days: number }[];
@@ -67,9 +69,12 @@ export default function IacDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-white">
-        IaC Pull Requests Metrics
-      </h2>
+      <div className="mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-white">
+          IaC Pull Requests Metrics
+        </h2>
+        <TooltipIcon content={tooltipContent.iac.title} />
+      </div>
       <DashboardFilters
         repository={repository}
         timeInterval={days}
@@ -84,6 +89,7 @@ export default function IacDashboard() {
           <div className="grid grid-cols-2 gap-4">
             <SimpleBarChart
               title="IaC PR Lead Time (weekly average)"
+              tooltip={tooltipContent.iac.leadTimeMovingAvg}
               data={data.leadTimeMovingAvg}
               xKey="week"
               bars={[
@@ -106,12 +112,14 @@ export default function IacDashboard() {
             />
             <SimpleLineChart
               title="IaC PR Lead Time (trend)"
+              tooltip={tooltipContent.iac.leadTimeTrend}
               data={data.leadTimeTrend}
               xKey="date"
               lines={[{ key: "trend_line", name: "Trend", color: "#dc2626" }]}
             />
             <SimpleLineChart
               title="Supervised vs Unsupervised IaC PRs (Cumulative)"
+              tooltip={tooltipContent.iac.supervisedVsUnsupervised}
               data={supervisedPivoted}
               xKey="run_date"
               lines={[
@@ -129,6 +137,7 @@ export default function IacDashboard() {
             />
             <SimpleLineChart
               title="IaC PRs Count Over Time"
+              tooltip={tooltipContent.iac.prsOverTime}
               data={data.prsOverTime}
               xKey="week"
               lines={[{ key: "pr_count", name: "PR Count", color: "#2563eb" }]}
@@ -138,6 +147,7 @@ export default function IacDashboard() {
           <div className="mt-4">
             <DataTable
               title="IaC PRs by Reviewer"
+              tooltip={tooltipContent.iac.prsByReviewer}
               columns={[
                 { key: "reviewer", label: "Reviewer" },
                 { key: "total_prs", label: "Total PRs" },
