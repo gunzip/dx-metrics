@@ -165,7 +165,9 @@ export default function PullRequestsReviewDashboard() {
                     { key: "reviewer", label: "Reviewer" },
                     { key: "review_count", label: "Reviews" },
                   ]}
-                  data={data.reviewMatrix as Record<string, unknown>[]}
+                  data={(data.reviewMatrix as Record<string, unknown>[]).filter(
+                    (row) => row.author !== row.reviewer
+                  )}
                   tooltip={tooltipContent.authorReviewerMatrix}
                 />
               </div>

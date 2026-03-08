@@ -62,18 +62,18 @@ export default function DxAdoptionDashboard() {
   const driftStatusBadge = (status: string) => {
     if (status === "up-to-date")
       return (
-        <span className="inline-block rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+        <span className="inline-block whitespace-nowrap rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
           🟢 up-to-date
         </span>
       );
     if (status === "outdated")
       return (
-        <span className="inline-block rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+        <span className="inline-block whitespace-nowrap rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
           🟡 outdated
         </span>
       );
     return (
-      <span className="inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+      <span className="inline-block whitespace-nowrap rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
         ⚪ unknown
       </span>
     );
