@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.0",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.38.0",
     "js-yaml": "^4.1.1",

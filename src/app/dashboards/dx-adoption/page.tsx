@@ -1,10 +1,14 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { SimplePieChart, DataTable } from "@/components/Charts";
 import { MetricCard } from "@/components/MetricCard";
+import TooltipIcon from "@/components/TooltipIcon";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
+import { dxAdoptionTooltips as tooltipContent } from "./tooltips";
 
 interface DxAdoptionData {
   pipelineAdoption: { pipeline_type: string; pipeline_count: number }[];
@@ -77,9 +81,12 @@ export default function DxAdoptionDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-white">
-        DX Tools Adoption Metrics
-      </h2>
+      <div className="mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-white">
+          DX Tools Adoption Metrics
+        </h2>
+        <TooltipIcon content={tooltipContent.title} />
+      </div>
       <DashboardFilters
         repository={repository}
         onRepositoryChange={setRepository}
@@ -91,10 +98,15 @@ export default function DxAdoptionDashboard() {
       {data && (
         <>
           <div className="grid grid-cols-2 gap-4">
-            <SimplePieChart title="DX Pipeline Adoption" data={pipelinePie} />
+            <SimplePieChart
+              title="DX Pipeline Adoption"
+              data={pipelinePie}
+              tooltip={tooltipContent.pipelineAdoption}
+            />
             <SimplePieChart
               title="DX Terraform Modules Adoption"
               data={modulePie}
+              tooltip={tooltipContent.moduleAdoption}
             />
           </div>
 
@@ -106,6 +118,7 @@ export default function DxAdoptionDashboard() {
                 { key: "pipeline_type", label: "Type" },
               ]}
               data={data.workflowsList}
+              tooltip={tooltipContent.workflowsList}
             />
             <DataTable
               title="Terraform Modules List"
@@ -115,6 +128,7 @@ export default function DxAdoptionDashboard() {
                 { key: "file_path", label: "File Path" },
               ]}
               data={data.modulesList}
+              tooltip={tooltipContent.modulesList}
             />
           </div>
 
@@ -132,19 +146,23 @@ export default function DxAdoptionDashboard() {
                       ? `${driftSummary.upToDate}/${driftSummary.total}`
                       : null
                   }
+                  tooltip={tooltipContent.upToDatePercentage}
                 />
                 <MetricCard
                   label="Up-to-Date %"
                   value={driftUpToDatePct}
                   suffix="%"
+                  tooltip={tooltipContent.upToDatePercentage}
                 />
                 <MetricCard
                   label="Outdated Modules"
                   value={driftSummary?.outdated ?? null}
+                  tooltip={tooltipContent.outdatedModules}
                 />
                 <MetricCard
                   label="Unknown Version"
                   value={driftSummary?.unknown ?? null}
+                  tooltip={tooltipContent.unknownVersions}
                 />
               </div>
               <DataTable
@@ -164,6 +182,7 @@ export default function DxAdoptionDashboard() {
                 data={
                   data.versionDriftList as unknown as Record<string, unknown>[]
                 }
+                tooltip={tooltipContent.versionDrift}
               />
             </>
           )}

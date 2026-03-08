@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { MetricCard } from "@/components/MetricCard";
 import {
@@ -7,8 +9,10 @@ import {
   SimpleBarChart,
   DataTable,
 } from "@/components/Charts";
+import TooltipIcon from "@/components/TooltipIcon";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
+import { pullRequestsTooltips as tooltipContent } from "./tooltips";
 
 interface PrDashboardData {
   cards: {
@@ -51,9 +55,12 @@ export default function PullRequestsDashboard() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-[#e6edf3]">
-            Pull Request <span className="text-green-500">Insights</span>
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-3xl font-bold tracking-tight text-[#e6edf3]">
+              Pull Request <span className="text-green-500">Insights</span>
+            </h2>
+            <TooltipIcon content={tooltipContent.title} />
+          </div>
           <p className="text-sm text-gray-500 mt-1">
             Analyzing engineering velocity and collaboration patterns.
           </p>
@@ -81,15 +88,22 @@ export default function PullRequestsDashboard() {
               label="Avg Lead Time"
               value={data.cards.avgLeadTime}
               suffix="days"
+              tooltip={tooltipContent.avgLeadTime}
             />
-            <MetricCard label="Total PRs" value={data.cards.totalPrs} />
+            <MetricCard
+              label="Total PRs"
+              value={data.cards.totalPrs}
+              tooltip={tooltipContent.totalPrs}
+            />
             <MetricCard
               label="Total Comments"
               value={data.cards.totalComments}
+              tooltip={tooltipContent.totalComments}
             />
             <MetricCard
               label="Comments / PR"
               value={data.cards.commentsPerPr}
+              tooltip={tooltipContent.commentsPerPr}
             />
           </div>
 
@@ -105,30 +119,35 @@ export default function PullRequestsDashboard() {
                   color: "#238636",
                 },
               ]}
+              tooltip={tooltipContent.leadTimeMovingAvg}
             />
             <SimpleLineChart
               title="Lead Time Trend"
               data={data.leadTimeTrend}
               xKey="date"
               lines={[{ key: "trend_line", name: "Trend", color: "#dc2626" }]}
+              tooltip={tooltipContent.leadTimeTrend}
             />
             <SimpleBarChart
               title="Merged Pull Requests"
               data={data.mergedPrs}
               xKey="date"
               bars={[{ key: "pr_count", name: "Merged PRs", color: "#2563eb" }]}
+              tooltip={tooltipContent.mergedPrs}
             />
             <SimpleLineChart
               title="Unmerged Pull Requests"
               data={data.unmergedPrs}
               xKey="date"
               lines={[{ key: "open_prs", name: "Open PRs", color: "#ea580c" }]}
+              tooltip={tooltipContent.unmergedPrs}
             />
             <SimpleBarChart
               title="New Pull Requests"
               data={data.newPrs}
               xKey="date"
               bars={[{ key: "pr_count", name: "New PRs", color: "#16a34a" }]}
+              tooltip={tooltipContent.newPrs}
             />
             <SimpleLineChart
               title="Cumulated New Pull Requests"
@@ -141,6 +160,7 @@ export default function PullRequestsDashboard() {
                   color: "#7c3aed",
                 },
               ]}
+              tooltip={tooltipContent.cumulatedNewPrs}
             />
             <SimpleBarChart
               title="Pull Requests Size (weekly average)"
@@ -153,6 +173,7 @@ export default function PullRequestsDashboard() {
                   color: "#2196F3",
                 },
               ]}
+              tooltip={tooltipContent.prSize}
             />
             <SimpleBarChart
               title="Pull Requests Comments (weekly average)"
@@ -165,6 +186,7 @@ export default function PullRequestsDashboard() {
                   color: "#0891b2",
                 },
               ]}
+              tooltip={tooltipContent.prComments}
             />
             <SimpleBarChart
               title="Pull Requests Size (avg additions)"
@@ -177,6 +199,7 @@ export default function PullRequestsDashboard() {
                   color: "#2196F3",
                 },
               ]}
+              tooltip={tooltipContent.prSizeDistribution}
             />
           </div>
 
@@ -191,6 +214,7 @@ export default function PullRequestsDashboard() {
                 { key: "merged_at", label: "Merged" },
               ]}
               data={data.slowestPrs}
+              tooltip={tooltipContent.slowestPrs}
             />
           </div>
         </div>

@@ -2,7 +2,9 @@
 
 import { MetricCard } from "@/components/MetricCard";
 import { SimpleLineChart, SimpleBarChart } from "@/components/Charts";
+import TooltipIcon from "@/components/TooltipIcon";
 import { useDashboardData } from "@/lib/useDashboardData";
+import { trackerTooltips as tooltipContent } from "./tooltips";
 
 interface TrackerData {
   cards: {
@@ -25,9 +27,12 @@ export default function TrackerDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-white">
-        Team DX Requests Metrics
-      </h2>
+      <div className="mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-white">
+          Team DX Requests Metrics
+        </h2>
+        <TooltipIcon content={tooltipContent.title} />
+      </div>
 
       {loading && <p className="text-gray-500">Loading...</p>}
 
@@ -37,20 +42,24 @@ export default function TrackerDashboard() {
             <MetricCard
               label="Opened Requests (total)"
               value={data.cards.openedTotal}
+              tooltip={tooltipContent.openedRequestsTotal}
             />
             <MetricCard
               label="Closed Requests (total)"
               value={data.cards.closedTotal}
+              tooltip={tooltipContent.closedRequestsTotal}
             />
             <MetricCard
               label="Avg Time to Close"
               value={data.cards.avgClose}
               suffix="days"
+              tooltip={tooltipContent.avgTimeToClose}
             />
             <MetricCard
               label="Requests Trend"
               value={data.cards.requestsTrend}
               suffix="%"
+              tooltip={tooltipContent.requestsTrend}
             />
           </div>
 
@@ -59,6 +68,7 @@ export default function TrackerDashboard() {
               title="DX Requests Frequency Trend"
               data={data.frequencyTrend}
               xKey="request_date"
+              tooltip={tooltipContent.frequencyTrend}
               lines={[
                 {
                   key: "actual_requests",

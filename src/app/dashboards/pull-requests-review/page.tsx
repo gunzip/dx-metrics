@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { MetricCard } from "@/components/MetricCard";
 import {
@@ -7,8 +9,10 @@ import {
   SimpleBarChart,
   DataTable,
 } from "@/components/Charts";
+import TooltipIcon from "@/components/TooltipIcon";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
+import { pullRequestsReviewTooltips as tooltipContent } from "./tooltips";
 
 interface PrReviewDashboardData {
   cards: {
@@ -43,9 +47,12 @@ export default function PullRequestsReviewDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-white">
-        Pull Requests Review
-      </h2>
+      <div className="mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-white">
+          Pull Requests Review
+        </h2>
+        <TooltipIcon content={tooltipContent.title} />
+      </div>
       <DashboardFilters
         repository={repository}
         timeInterval={days}
@@ -62,11 +69,13 @@ export default function PullRequestsReviewDashboard() {
               label="Avg Time to First Review"
               value={data.cards.avgTimeToFirstReview}
               suffix="hours"
+              tooltip={tooltipContent.avgTimeToFirstReview}
             />
             <MetricCard
               label="Avg Time to Merge"
               value={data.cards.avgTimeToMerge}
               suffix="hours"
+              tooltip={tooltipContent.avgTimeToMerge}
             />
           </div>
 
@@ -89,6 +98,7 @@ export default function PullRequestsReviewDashboard() {
                       color: "#2563eb",
                     },
                   ]}
+                  tooltip={tooltipContent.timeToFirstReviewTrend}
                 />
                 <SimpleLineChart
                   title="Avg Time to Merge after Approval (weekly, hours)"
@@ -101,6 +111,7 @@ export default function PullRequestsReviewDashboard() {
                       color: "#dc2626",
                     },
                   ]}
+                  tooltip={tooltipContent.timeToMergeTrend}
                 />
               </div>
             </>
@@ -132,6 +143,7 @@ export default function PullRequestsReviewDashboard() {
                       stackId: "reviews",
                     },
                   ]}
+                  tooltip={tooltipContent.reviewsPerReviewer}
                 />
                 <DataTable
                   title="Reviewer Stats"
@@ -142,6 +154,7 @@ export default function PullRequestsReviewDashboard() {
                     { key: "change_requests", label: "Changes Requested" },
                   ]}
                   data={data.reviewDistribution as Record<string, unknown>[]}
+                  tooltip={tooltipContent.reviewerStats}
                 />
               </div>
               <div className="mt-4">
@@ -153,6 +166,7 @@ export default function PullRequestsReviewDashboard() {
                     { key: "review_count", label: "Reviews" },
                   ]}
                   data={data.reviewMatrix as Record<string, unknown>[]}
+                  tooltip={tooltipContent.authorReviewerMatrix}
                 />
               </div>
             </>

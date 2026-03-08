@@ -3,6 +3,7 @@
 import { Sidebar } from "@/components/Sidebar";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 export function ClientLayout({
   children,
@@ -37,7 +38,8 @@ export function ClientLayout({
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0c10] font-sans">
+    <TooltipProvider>
+      <div className="flex min-h-screen bg-[#0a0c10] font-sans">
       <Sidebar />
       <div
         className={cn(
@@ -75,5 +77,6 @@ export function ClientLayout({
         <main className="p-8 max-w-[1600px] mx-auto">{children}</main>
       </div>
     </div>
+    </TooltipProvider>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { DashboardFilters } from "@/components/DashboardFilters";
 import {
   SimpleLineChart,
@@ -7,8 +9,10 @@ import {
   DataTable,
 } from "@/components/Charts";
 import { MetricCard } from "@/components/MetricCard";
+import TooltipIcon from "@/components/TooltipIcon";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
+import { workflowsTooltips as tooltipContent } from "./tooltips";
 
 interface WorkflowDashboardData {
   summary: {
@@ -97,7 +101,10 @@ export default function WorkflowsDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-white">Workflow Metrics</h2>
+      <div className="mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-white">Workflow Metrics</h2>
+        <TooltipIcon content={tooltipContent.title} side="right" />
+      </div>
       <DashboardFilters
         repository={repository}
         timeInterval={days}
@@ -113,10 +120,12 @@ export default function WorkflowsDashboard() {
             <MetricCard
               label="First Run"
               value={formatDate(data.summary.first_pipeline_date)}
+              tooltip={tooltipContent.firstRun}
             />
             <MetricCard
               label="Runs Count"
               value={data.summary.total_pipelines}
+              tooltip={tooltipContent.runsCount}
             />
             <MetricCard
               label="Average Duration"
@@ -126,6 +135,7 @@ export default function WorkflowsDashboard() {
                   : "—"
               }
               suffix="min"
+              tooltip={tooltipContent.avgDuration}
             />
             <MetricCard
               label="Total Duration"
@@ -135,6 +145,7 @@ export default function WorkflowsDashboard() {
                   : "—"
               }
               suffix="min"
+              tooltip={tooltipContent.totalDuration}
             />
           </div>
 
@@ -144,6 +155,7 @@ export default function WorkflowsDashboard() {
               data={data.deployments}
               xKey="run_week"
               xValueFormatter={formatDate}
+              tooltip={tooltipContent.deploymentsToProduction}
               bars={[
                 {
                   key: "weekly_deployment_count",
@@ -157,6 +169,7 @@ export default function WorkflowsDashboard() {
               data={dxVsNonDxPivoted}
               xKey="run_date"
               xValueFormatter={formatDate}
+              tooltip={tooltipContent.dxVsNonDx}
               lines={[
                 { key: "dx", name: "DX Pipelines", color: "#2563eb" },
                 { key: "non_dx", name: "Non-DX Pipelines", color: "#dc2626" },
@@ -166,6 +179,7 @@ export default function WorkflowsDashboard() {
               title="Pipeline Failures"
               data={data.failures}
               xKey="workflow_name"
+              tooltip={tooltipContent.pipelineFailures}
               bars={[
                 {
                   key: "failed_runs",
@@ -179,6 +193,7 @@ export default function WorkflowsDashboard() {
               title="Pipeline Average Duration (minutes)"
               data={data.avgDuration}
               xKey="workflow_name"
+              tooltip={tooltipContent.avgPipelineDuration}
               bars={[
                 {
                   key: "average_duration_minutes",
@@ -192,6 +207,7 @@ export default function WorkflowsDashboard() {
               title="Pipeline Run Count"
               data={data.runCount}
               xKey="workflow_name"
+              tooltip={tooltipContent.pipelineRunCount}
               bars={[{ key: "run_count", name: "Run Count", color: "#16a34a" }]}
               layout="vertical"
             />
@@ -199,6 +215,7 @@ export default function WorkflowsDashboard() {
               title="Pipeline Cumulative Duration (minutes)"
               data={data.cumulativeDuration}
               xKey="workflow_name"
+              tooltip={tooltipContent.cumulativeDuration}
               bars={[
                 {
                   key: "cumulative_duration_minutes",
@@ -213,6 +230,7 @@ export default function WorkflowsDashboard() {
               data={data.infraPlan}
               xKey="run_timestamp"
               xValueFormatter={formatDate}
+              tooltip={tooltipContent.infraPlanDuration}
               lines={[
                 {
                   key: "duration_minutes",
@@ -226,6 +244,7 @@ export default function WorkflowsDashboard() {
               data={data.infraApply}
               xKey="run_timestamp"
               xValueFormatter={formatDate}
+              tooltip={tooltipContent.infraApplyDuration}
               lines={[
                 {
                   key: "duration_minutes",
@@ -239,6 +258,7 @@ export default function WorkflowsDashboard() {
           <div className="mt-4">
             <DataTable
               title="Workflow Success/Failure Ratio"
+              tooltip={tooltipContent.successFailureRatio}
               columns={[
                 { key: "workflow_name", label: "Workflow" },
                 { key: "total_runs", label: "Total Runs" },

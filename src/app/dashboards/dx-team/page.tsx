@@ -1,9 +1,13 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { SimpleBarChart, DataTable } from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
+import TooltipIcon from "@/components/TooltipIcon";
+import { dxTeamTooltips as tooltipContent } from "./tooltips";
 
 interface DxTeamData {
   ioInfraPrs: { date: string; dx_pr: number; non_dx_pr: number }[];
@@ -29,7 +33,10 @@ export default function DxTeamDashboard() {
 
   return (
     <div>
-      <h2 className="mb-4 text-xl font-bold text-white">Team DX Metrics</h2>
+      <div className="mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-white">Team DX Metrics</h2>
+        <TooltipIcon content={tooltipContent.title} />
+      </div>
       <DashboardFilters
         timeInterval={days}
         onTimeIntervalChange={setDays}
@@ -45,6 +52,7 @@ export default function DxTeamDashboard() {
               title="Pull Requests on IO-Infra"
               data={data.ioInfraPrs}
               xKey="date"
+              tooltip={tooltipContent.ioInfraPrs}
               bars={[
                 { key: "dx_pr", name: "DX PR", color: "#2563eb", stackId: "a" },
                 {
@@ -59,6 +67,7 @@ export default function DxTeamDashboard() {
               title="DX Members Commits on Non-DX Repositories"
               data={data.dxCommits}
               xKey="committer_date"
+              tooltip={tooltipContent.dxMemberCommits}
               bars={[
                 {
                   key: "repository_commits",
@@ -72,6 +81,7 @@ export default function DxTeamDashboard() {
           <div className="mt-4 grid grid-cols-2 gap-4">
             <DataTable
               title="Pull Requests on IO-Infra"
+              tooltip={tooltipContent.ioInfraPrTable}
               columns={[
                 { key: "author", label: "Author" },
                 { key: "created_at", label: "Created At" },
@@ -80,6 +90,7 @@ export default function DxTeamDashboard() {
             />
             <DataTable
               title="DX Members Commit by Repository"
+              tooltip={tooltipContent.commitsByRepo}
               columns={[
                 { key: "member_name", label: "Member" },
                 { key: "full_name", label: "Repository" },
@@ -92,11 +103,13 @@ export default function DxTeamDashboard() {
           <div className="mt-4 grid grid-cols-2 gap-4">
             <DataTable
               title="Projects that adopt DX tooling"
+              tooltip={tooltipContent.adoptingProjects}
               columns={[{ key: "repository", label: "Repository" }]}
               data={data.dxAdoptingProjects}
             />
             <DataTable
               title="DX Pipelines usage"
+              tooltip={tooltipContent.pipelinesUsage}
               columns={[
                 {
                   key: "dx_path",

@@ -16,6 +16,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import TooltipIcon from "@/components/TooltipIcon";
 
 const COLORS = [
   "#238636", // green
@@ -32,20 +33,25 @@ interface ChartWrapperProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  tooltip?: string;
 }
 
 export function ChartWrapper({
   title,
   children,
   className = "",
+  tooltip,
 }: ChartWrapperProps) {
   return (
     <div
       className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-white">
-        {title}
-      </h3>
+      <div className="mb-6 flex items-center gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-white">
+          {title}
+        </h3>
+        {tooltip && <TooltipIcon content={tooltip} />}
+      </div>
       <div className="w-full" style={{ height: "288px" }}>
         {children}
       </div>
@@ -61,6 +67,7 @@ interface SimpleLineChartProps {
   lines: { key: string; name: string; color?: string }[];
   className?: string;
   xValueFormatter?: (value: any) => string;
+  tooltip?: string;
 }
 
 export function SimpleLineChart({
@@ -70,9 +77,10 @@ export function SimpleLineChart({
   lines,
   className,
   xValueFormatter,
+  tooltip,
 }: SimpleLineChartProps) {
   return (
-    <ChartWrapper title={title} className={className}>
+    <ChartWrapper title={title} className={className} tooltip={tooltip}>
       <LineChart
         data={data}
         margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
@@ -157,6 +165,7 @@ interface SimpleBarChartProps {
   className?: string;
   layout?: "horizontal" | "vertical";
   xValueFormatter?: (value: any) => string;
+  tooltip?: string;
 }
 
 export function SimpleBarChart({
@@ -167,11 +176,12 @@ export function SimpleBarChart({
   className,
   layout = "horizontal",
   xValueFormatter,
+  tooltip,
 }: SimpleBarChartProps) {
   const isVertical = layout === "vertical";
 
   return (
-    <ChartWrapper title={title} className={className}>
+    <ChartWrapper title={title} className={className} tooltip={tooltip}>
       <BarChart
         data={data}
         layout={isVertical ? "vertical" : "horizontal"}
@@ -257,15 +267,17 @@ interface SimplePieChartProps {
   title: string;
   data: { name: string; value: number }[];
   className?: string;
+  tooltip?: string;
 }
 
 export function SimplePieChart({
   title,
   data,
   className,
+  tooltip,
 }: SimplePieChartProps) {
   return (
-    <ChartWrapper title={title} className={className}>
+    <ChartWrapper title={title} className={className} tooltip={tooltip}>
       <ResponsiveContainer width="100%" height={288}>
         <PieChart>
           <Pie
@@ -317,6 +329,7 @@ interface DataTableProps {
   columns: DataTableColumn[];
   data: Record<string, unknown>[];
   className?: string;
+  tooltip?: string;
 }
 
 export function DataTable({
@@ -324,6 +337,7 @@ export function DataTable({
   columns,
   data,
   className = "",
+  tooltip,
 }: DataTableProps) {
   const [sortKey, setSortKey] = React.useState<string | null>(null);
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
@@ -356,9 +370,12 @@ export function DataTable({
     <div
       className={`rounded-xl border border-[#30363d] bg-[#0d1117] p-6 shadow-sm transition-all hover:border-[#8b949e]/50 ${className}`}
     >
-      <h3 className="mb-6 text-xs font-semibold uppercase tracking-wider text-white">
-        {title}
-      </h3>
+      <div className="mb-6 flex items-center gap-2">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-white">
+          {title}
+        </h3>
+        {tooltip && <TooltipIcon content={tooltip} />}
+      </div>
       <div className="max-h-96 overflow-auto custom-scrollbar">
         <table className="min-w-full text-sm">
           <thead>
