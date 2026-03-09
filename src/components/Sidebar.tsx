@@ -32,8 +32,8 @@ const navItems = [
   { href: "/dashboards/iac", label: "IaC PRs", icon: Cloud },
   { href: "/dashboards/dx-adoption", label: "DX Adoption", icon: TrendingUp },
   { href: "/dashboards/dx-team", label: "DX Team", icon: Users },
-  { href: "/dashboards/tracker", label: "Tracker", icon: Activity },
-  { href: "/dashboards/releases", label: "Releases", icon: Ship },
+  { href: "/dashboards/dx-tracker", label: "DX Tracker", icon: Activity },
+  { href: "/dashboards/dx-releases", label: "DX Releases", icon: Ship },
 ];
 
 export function Sidebar() {
