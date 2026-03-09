@@ -72,7 +72,8 @@ export function Sidebar() {
       >
         {!isCollapsed && (
           <h1 className="text-xl font-bold text-[#e6edf3] tracking-tight truncate">
-            Engineering <span className="text-green-500 text-sm">Radar</span>
+            Engineering <br />
+            <span className="text-green-500 text-sm">M e t r i c s</span>
           </h1>
         )}
 
