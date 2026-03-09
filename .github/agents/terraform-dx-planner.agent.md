@@ -297,7 +297,7 @@ When planning infrastructure, ensure your recommendations align with these docum
 
 Your planning output should include:
 
-```
+````
 ## Architecture Plan
 
 ### Summary
@@ -345,14 +345,15 @@ Your planning output should include:
 module "component" {
   source  = "pagopa-dx/azure-core-infra/azurerm"
   version = "~> 3.0"  # Allows 3.0.0, 3.0.1, 3.0.2, 3.1.0 but NOT 4.0.0
-  
+
   # Module configuration...
 }
-```
+````
 
 ### Folder Structure
 
 #### Overall Repository Structure
+
 ```
 infra/
 ├─ repository/                    # GitHub repository settings (apply first)
@@ -406,6 +407,7 @@ infra/
 ```
 
 #### Key Principles for Local Module Organization
+
 - **One module per service**: Each service (APIM, Function, App Service, etc.) has its own module with clear responsibility
 - **Encapsulation**: Related resources and IAM permissions stay together (e.g., `func_processor/iam.tf` has only processor permissions)
 - **File organization within each module**:
@@ -440,6 +442,7 @@ Pass `local.tags` to ALL resources and modules - never hardcode tags.
 Before deployment, configure module locking for consistency:
 
 1. Create `.pre-commit-config.yaml`:
+
 ```yaml
 repos:
   - repo: https://github.com/pagopa/dx
@@ -451,6 +454,7 @@ repos:
 ```
 
 2. Generate lock files:
+
 ```bash
 pre-commit run -a
 ```
@@ -458,6 +462,7 @@ pre-commit run -a
 3. Commit the `.terraform.lock.hcl` files (security requirement)
 
 ### Deployment Dependencies
+
 1. `infra/repository/` → GitHub repository settings (one-time, rarely changes)
 2. `infra/core/<tier>/` → Core infrastructure (VNets, shared KeyVault, Log Analytics)
 3. `infra/bootstrapper/<tier>/` → GitHub Actions bootstrap (depends on core outputs)
@@ -466,6 +471,7 @@ pre-commit run -a
 **Critical**: Always apply in this order. Bootstrapper and resources reference outputs from core.
 
 ### Key Considerations
+
 - **Semantic Versioning**: Use `~> X.Y` version constraints (e.g., `~> 3.0` allows 3.0, 3.1, 3.2 but not 4.0)
 - **Registry Modules First**: Always recommend DX Registry modules before external modules
 - **Local Modules for Custom Logic**: Use local modules (in `_modules/`) for organization-specific patterns
@@ -475,6 +481,7 @@ pre-commit run -a
 - **GitHub Actions**: Use federated identity (not secrets) via bootstrapper for CI/CD access
 
 ### Deployment Checklist
+
 - [ ] Repository settings deployed
 - [ ] Core infrastructure deployed (VNets, shared KeyVaults)
 - [ ] Bootstrapper deployed (GitHub Actions identities)
@@ -485,7 +492,8 @@ pre-commit run -a
 - [ ] Module lock files committed (`.terraform.lock.hcl`)
 - [ ] Application resources deployed
 - [ ] CI/CD pipelines tested
-```
+
+````
 
 ## Important Constraints
 
@@ -521,9 +529,10 @@ for module in "azure-core-infra" "azure-function-app" "azure-storage-account" "a
   curl -s "https://registry.terraform.io/v1/modules/pagopa-dx/$module/azurerm" | \
     jq '{name: .name, version: .version}'
 done
-```
+````
 
 **Example output**:
+
 ```json
 {
   "name": "azure-core-infra",
@@ -536,6 +545,7 @@ done
 ```
 
 ### Phase 4: Design Module Organization
+
 1. Identify which modules will be core infrastructure (bootstrapper, core)
 2. Identify which modules will be application resources in `infra/resources/_modules/`
 3. Apply "one service per module" pattern
@@ -543,12 +553,14 @@ done
 5. Plan tagging strategy with required tags
 
 ### Phase 5: Plan Deployment Order
+
 1. `infra/repository/` (GitHub settings)
 2. `infra/core/<tier>/` (networking, shared resources)
 3. `infra/bootstrapper/<tier>/` (GitHub Actions setup)
 4. `infra/resources/<tier>/` (application resources)
 
 ### Phase 6: Create & Deliver Plan
+
 1. Create architecture plan following "Output Format" structure
 2. **Include the modules table WITH versions** (from Phase 3)
 3. Include folder structure diagram with local modules
@@ -646,23 +658,25 @@ All DX modules follow semantic versioning: `MAJOR.MINOR.PATCH` (e.g., 3.0.1)
 - **PATCH** (3.0.0 → 3.0.1): Bug fixes, safe to auto-upgrade
 
 **Use in Terraform**: `version = "~> 3.0"` means:
+
 - ✅ Allows: 3.0.0, 3.0.1, 3.1.0, 3.2.0
 - ❌ Blocks: 4.0.0 (major breaking change)
 
 ### Local Module Best Practices Summary
 
-| Practice | What | Why |
-|----------|------|-----|
-| **One service per module** | Each module = one service (APIM, Function, etc.) | Clear ownership, parallel team work |
-| **Encapsulated IAM** | Each module has its own `iam.tf` | Easy to audit, no scattered permissions |
-| **Root modules use locals only** | `infra/resources/prod/locals.tf`, NO variables.tf | Config is explicit and self-contained |
-| **Standard file organization** | main.tf, variables.tf, outputs.tf, iam.tf | Consistency across all modules |
-| **Pre-commit + lock files** | Commit `.terraform.lock.hcl` files | Security, reproducibility, CI/CD validation |
-| **Required tags on all resources** | Always apply `local.tags` | Cost tracking, ownership, compliance |
+| Practice                           | What                                              | Why                                         |
+| ---------------------------------- | ------------------------------------------------- | ------------------------------------------- |
+| **One service per module**         | Each module = one service (APIM, Function, etc.)  | Clear ownership, parallel team work         |
+| **Encapsulated IAM**               | Each module has its own `iam.tf`                  | Easy to audit, no scattered permissions     |
+| **Root modules use locals only**   | `infra/resources/prod/locals.tf`, NO variables.tf | Config is explicit and self-contained       |
+| **Standard file organization**     | main.tf, variables.tf, outputs.tf, iam.tf         | Consistency across all modules              |
+| **Pre-commit + lock files**        | Commit `.terraform.lock.hcl` files                | Security, reproducibility, CI/CD validation |
+| **Required tags on all resources** | Always apply `local.tags`                         | Cost tracking, ownership, compliance        |
 
 ### Common Module Patterns by Use Case
 
 **Web APIs + Functions + Storage**:
+
 ```
 - azure-core-infra (shared networking, Key Vault)
 - azure-api-management (API gateway)
@@ -673,6 +687,7 @@ All DX modules follow semantic versioning: `MAJOR.MINOR.PATCH` (e.g., 3.0.1)
 ```
 
 **Multi-tenant SaaS**:
+
 ```
 - azure-core-infra (core infrastructure)
 - azure-app-service (multi-tenant web app)
@@ -683,6 +698,7 @@ All DX modules follow semantic versioning: `MAJOR.MINOR.PATCH` (e.g., 3.0.1)
 ```
 
 **Event-driven Microservices**:
+
 ```
 - azure-core-infra (core infrastructure)
 - azure-function-app (event processors)
