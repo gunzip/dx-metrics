@@ -2,7 +2,9 @@
 /**
  * DX Metrics Import Script
  *
- * Usage: npx tsx scripts/import.ts --since 2024-01-01 [--entity <type>] [--tracker-csv <path>] [--force]
+ * Usage: npx tsx --env-file .env scripts/import.ts --since 2024-01-01 [--entity <type>] [--tracker-csv <path>] [--force]
+ *
+ * Note: use --env-file .env (or export env vars manually) to load GITHUB_TOKEN and DATABASE_URL.
  *
  * Incrementally imports data from GitHub into PostgreSQL.
  * All imports use UPSERT for idempotency.
@@ -46,6 +48,7 @@ Options:
                               code-search       Code search results (DX repo)
                               terraform-registry Terraform registry module releases
                               terraform-modules Terraform module usage (via terrawiz)
+                              dx-pipelines      DX pipeline usages (via GitHub code search)
                               tracker           Tracker CSV data (requires --tracker-csv)
 
   --tracker-csv <path>      Path to the tracker CSV file (used with --entity tracker)
@@ -755,6 +758,67 @@ async function importCommitsForMember(member: string, since: string) {
   await sleep(2000); // Search API rate limit
 }
 
+async function importDxPipelineUsages() {
+  console.log(
+    `  Importing DX pipeline usages (code search for pagopa/dx/.github/workflows)...`,
+  );
+
+  const query = `pagopa/dx/.github/workflows org:${ORGANIZATION} path:.github/workflows`;
+  try {
+    const results = await octokit.paginate(octokit.rest.search.code, {
+      q: query,
+      per_page: 100,
+    });
+    console.log(`    Found ${results.length} workflow files referencing DX`);
+
+    // Snapshot: clear all existing records before reinserting
+    await db.execute(sql`TRUNCATE TABLE dx_pipeline_usages`);
+
+    const DX_USES_RE =
+      /uses:\s*(pagopa\/dx\/\.github\/workflows\/([^@\s"'\n]+))(?:@([^\s"'\n]+))?/g;
+
+    let count = 0;
+    for (const item of results) {
+      const repoFullName = item.repository?.full_name;
+      const callerFile = item.path;
+      if (!repoFullName || !callerFile) continue;
+
+      // Fetch file content to extract specific DX workflow references
+      let content = "";
+      try {
+        const { data: fileData } = await octokit.rest.repos.getContent({
+          owner: item.repository.owner.login,
+          repo: item.repository.name,
+          path: callerFile,
+        });
+        if ("content" in fileData && fileData.content) {
+          content = Buffer.from(fileData.content, "base64").toString("utf-8");
+        }
+      } catch {
+        // If content fetch fails, skip this file
+        continue;
+      }
+
+      // Extract all `uses: pagopa/dx/.github/workflows/X@ref` patterns
+      const matches = [...content.matchAll(DX_USES_RE)];
+      for (const m of matches) {
+        const dxWorkflow = m[1]; // full path e.g. pagopa/dx/.github/workflows/node-ci.yml
+        const ref = m[3] ?? null;
+        await db
+          .insert(schema.dxPipelineUsages)
+          .values({ repository: repoFullName, callerFile, dxWorkflow, ref })
+          .onConflictDoNothing();
+        count++;
+      }
+      await sleep(200); // be gentle with secondary rate limits
+    }
+    console.log(`    ✓ ${count} DX pipeline usage records imported`);
+  } catch (e) {
+    console.log(`    ⚠ DX pipeline usages import failed: ${e}`);
+    throw e;
+  }
+}
+
 async function importCodeSearch() {
   console.log(`  Importing code search results (DX adoption)...`);
 
@@ -1249,6 +1313,13 @@ async function main() {
   if (shouldRun("code-search")) {
     console.log("\n🔍 Code Search (DX Adoption)");
     await runWithCheckpoint("code-search", null, () => importCodeSearch());
+  }
+
+  if (shouldRun("dx-pipelines")) {
+    console.log("\n🔍 DX Pipeline Usages");
+    await runWithCheckpoint("dx-pipelines", null, () =>
+      importDxPipelineUsages(),
+    );
   }
 
   if (shouldRun("terraform-registry")) {

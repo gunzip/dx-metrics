@@ -167,6 +167,25 @@ export const pullRequestReviews = pgTable(
   ],
 );
 
+// --- DX Pipeline Usages ---
+export const dxPipelineUsages = pgTable(
+  "dx_pipeline_usages",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    repository: text("repository").notNull(),
+    callerFile: text("caller_file").notNull(),
+    dxWorkflow: text("dx_workflow").notNull(),
+    ref: text("ref"),
+  },
+  (t) => [
+    uniqueIndex("dx_pipeline_repo_file_wf_idx").on(
+      t.repository,
+      t.callerFile,
+      t.dxWorkflow,
+    ),
+  ],
+);
+
 // --- Terraform Modules ---
 export const terraformModules = pgTable(
   "terraform_modules",

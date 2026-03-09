@@ -104,7 +104,25 @@ export default function DxTeamDashboard() {
             <DataTable
               title="Projects that adopt DX tooling"
               tooltip={tooltipContent.adoptingProjects}
-              columns={[{ key: "repository", label: "Repository" }]}
+              columns={[
+                {
+                  key: "repository",
+                  label: "Repository",
+                  renderCell: (val) => {
+                    const repository = String(val);
+                    return (
+                      <a
+                        href={`https://github.com/${repository}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {repository}
+                      </a>
+                    );
+                  },
+                },
+              ]}
               data={data.dxAdoptingProjects}
             />
             <DataTable

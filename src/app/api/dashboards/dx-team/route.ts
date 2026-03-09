@@ -79,22 +79,11 @@ export async function GET(req: NextRequest) {
 
     // DX Pipelines usage across repositories
     const dxPipelinesUsage = await db.execute(sql`
-      WITH pipeline_data AS (
-        SELECT 
-          repository_id,
-          (
-            SELECT (regexp_matches(pipeline, 'pagopa/dx/[^@\\s"''\\n]+', 'i'))[1]
-            LIMIT 1
-          ) as dx_path
-        FROM workflows
-        WHERE pipeline LIKE '%pagopa/dx%'
-      )
-      SELECT 
-        dx_path,
-        COUNT(DISTINCT repository_id) AS repository_count
-      FROM pipeline_data
-      WHERE dx_path IS NOT NULL
-      GROUP BY dx_path
+      SELECT
+        dx_workflow AS dx_path,
+        COUNT(DISTINCT repository) AS repository_count
+      FROM dx_pipeline_usages
+      GROUP BY dx_workflow
       ORDER BY repository_count DESC
     `);
 
