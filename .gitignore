@@ -1,9 +1,9 @@
+node_modules
+.next
 .env
-.env.*
-*.csv
-test.*
-output/*
-backup/*
-.steampipe/
+.env.local
+.pnpm-store
 node_modules/
-*.js
+*.tsbuildinfo
+local
+.dx

@@ -1,80 +1,126 @@
-# Engineering Metrics Collector
+# DX Metrics
 
-The Engineering Metrics Collector is a straightforward tool designed to gather
-and visualize engineering metrics. It leverages
-[Steampipe](https://steampipe.io) to query databases and
-[Powerpipe](https://powerpipe.io) to share insightful dashboards, providing a
-comprehensive view of your engineering data.
+A Next.js web application for visualizing GitHub engineering metrics.
+Uses PostgreSQL for data storage and Recharts for dashboard visualization.
 
-## Build the container
+## Architecture
 
-**Important**: Ensure you have your `GITHUB_TOKEN` environment variable set on your host machine before building. The token is needed during the build phase for Steampipe plugin installation and database initialization.
+- **Next.js 15** (App Router) — frontend dashboards + API routes
+- **PostgreSQL 16** — persistent data storage
+- **Drizzle ORM** — type-safe database access
+- **Recharts** — chart rendering
+- **NextAuth.js** — GitHub OAuth authentication
+- **Import script** — incremental data sync from GitHub API via Octokit
 
-Download buildx release for your platform from
-https://github.com/docker/buildx/releases then run
+## Prerequisites
 
-```bash
-# Using Docker BuildKit with secret mount (required for security)
-DOCKER_BUILDKIT=1 docker build --secret id=github_token,env=GITHUB_TOKEN -t metrics:latest .
+- Docker and Docker Compose
+- A GitHub personal access token with `repo` scope
+- A GitHub OAuth App (for dashboard authentication)
 
-# If using buildx:
-DOCKER_BUILDKIT=1 buildx build --secret id=github_token,env=GITHUB_TOKEN -t metrics:latest .
+## Quick Start
 
-# On Mac Arm64 platform with downloaded buildx binary:
-DOCKER_BUILDKIT=1 $HOME/bin/buildx-v0.21.2.darwin-arm64 build --secret id=github_token,env=GITHUB_TOKEN -t metrics:latest .
-```
-
-**Security Note**: This build uses Docker BuildKit's `--secret` mount feature exclusively, which provides the `GITHUB_TOKEN` during build without storing it in any image layer or build cache. This approach:
-
-- Never exposes the token in image history
-- Doesn't leak the token in intermediate layers
-- Passes security linting (no ARG or ENV for secrets)
-- Requires `DOCKER_BUILDKIT=1` to be set
-
-The build process will attempt to initialize the Steampipe database and install plugins. If this fails during build, don't worry - the initialization will be retried when the container starts. The token is also required at runtime for ongoing GitHub API operations.
-
-## Getting the GitHub token
-
-To export data from GitHub, you need to create a personal access token. Follow
-the instructions at
-https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
-to create a token with the `repo` scope.
-
-## Export data
-
-Use the `./export.sh` script to export data from the connected sources (ie.
-GitHub, Jira, etc). The script will create an `output` directory with the
-exported data in CSV format.
+1. **Copy environment file:**
 
 ```bash
-GITHUB_TOKEN=ghp_XXXXXXXX ./export.sh
+cp .env.example .env
 ```
 
-## Run the container
+2. **Edit `.env`** with your values:
+   - `GITHUB_TOKEN` — GitHub personal access token
+   - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` — GitHub OAuth App credentials
+   - `AUTH_SECRET` — random secret for session encryption
 
-Running the container will start the Powerpipe server on port 9033 and the
-Steampipe server on port 9193.
-
-- The `output` directory is mounted to the container to access the exported
-  data.
-- The `steampipe-data` volume is mounted to the container to persist the
-  Steampipe configuration.
-- The `GITHUB_TOKEN` environment variable is **required** at runtime to authenticate with the
-  GitHub API for data export and Steampipe queries.
-
-**Important**: You MUST pass the `GITHUB_TOKEN` at runtime using the `-e` flag. The container will exit with an error if the token is not provided. Never hardcode it or commit it to version control.
+3. **Start services:**
 
 ```bash
-# Using the GITHUB_TOKEN from your host environment (recommended)
-docker run -v steampipe-output:/app/output -v steampipe-data:/app/.steampipe -e GITHUB_TOKEN="${GITHUB_TOKEN}" -p 9033:9033 -p 9193:9193 metrics
-
-# Or with the output directory mounted from the host:
-docker run -v $(pwd)/output:/app/output -v steampipe-data:/app/.steampipe -e GITHUB_TOKEN="${GITHUB_TOKEN}" -p 9033:9033 -p 9193:9193 metrics
-
-# Alternatively, you can specify the token directly (less secure):
-# docker run -v steampipe-output:/app/output -v steampipe-data:/app/.steampipe -e GITHUB_TOKEN=ghp_XXXXXXXX -p 9033:9033 -p 9193:9193 metrics
+docker compose up -d
 ```
 
-**Note**: If you forget to pass the `GITHUB_TOKEN`, the container will fail immediately with a clear error message.
+4. **Run database migrations:**
 
-You may also run the entrypoint script directly.
+```bash
+DATABASE_URL=postgresql://dxmetrics:dxmetrics@172.18.0.1:5432/dxmetrics npx drizzle-kit migrate
+```
+
+5. **Import data (incremental):**
+
+```bash
+export GITHUB_TOKEN=ghp_XXX
+export DATABASE_URL=postgresql://dxmetrics:dxmetrics@172.18.0.1:5432/dxmetrics
+npx tsx scripts/import.ts --since 2026-01-01
+```
+
+6. **Access dashboards** at http://localhost:3000
+
+## Import Script
+
+The import script supports incremental data sync from GitHub:
+
+```bash
+npx tsx scripts/import.ts --since YYYY-MM-DD [--entity <type>] [--tracker-csv <path>]
+```
+
+### Entity types
+
+- `all` (default) — import everything
+- `pull-requests` — pull requests per repository
+- `workflows` — GitHub Actions workflows
+- `workflow-runs` — workflow run history
+- `iac-pr` — IaC pull request lead times
+- `commits` — DX team member commits
+- `code-search` — code search results for DX adoption
+- `terraform-registry` — Terraform registry releases
+- `tracker` — DX request tracker (from CSV)
+
+### Tracker CSV Import
+
+```bash
+npx tsx scripts/import.ts --since 2024-01-01 --entity tracker --tracker-csv /path/to/tracker.csv
+```
+
+## Dashboards
+
+| Dashboard         | Description                                              |
+| ----------------- | -------------------------------------------------------- |
+| **Pull Requests** | Lead time, merge frequency, PR size, comments            |
+| **Workflows**     | Deployment frequency, pipeline failures, duration        |
+| **IaC PRs**       | Infrastructure PR lead times, supervised vs unsupervised |
+| **DX Adoption**   | DX pipeline and Terraform module adoption                |
+| **DX Team**       | Team commits across repositories                         |
+| **Tracker**       | DX request tracking and trends                           |
+
+## Configuration
+
+Configuration is set via environment variables:
+
+| Variable          | Default      | Description                           |
+| ----------------- | ------------ | ------------------------------------- |
+| `ORGANIZATION`    | `pagopa`     | GitHub organization                   |
+| `REPOSITORIES`    | (see config) | Comma-separated repository list       |
+| `DX_TEAM_MEMBERS` | (see config) | Comma-separated team member usernames |
+| `DX_REPO`         | `dx`         | The DX repository name                |
+
+## Development
+
+```bash
+cd nextapp
+pnpm install
+pnpm dev
+```
+
+## Database Connection
+
+When running outside Docker Compose (e.g., in development), the database URL needs to point to the Docker network gateway:
+
+```bash
+DATABASE_URL=postgresql://dxmetrics:dxmetrics@172.18.0.1:5432/dxmetrics
+```
+
+To find the correct IP, inspect the Docker network:
+
+```bash
+docker network inspect dx-metrics_default
+```
+
+Look for the "Gateway" IP in the network config (usually 172.18.0.1 for the default bridge network).
