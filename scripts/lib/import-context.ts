@@ -32,6 +32,8 @@ export interface ImportContext {
   ensureRepo: (name: string) => Promise<number>;
 }
 
+// We use a dynamic import as module resolution is set to bundler
+// which doesn't support conditional exports.
 const createOctokitClient = async (githubToken?: string): Promise<Octokit> => {
   const { Octokit } = await import("octokit");
 
