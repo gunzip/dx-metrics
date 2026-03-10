@@ -31,9 +31,7 @@ interface IacDashboardData {
 }
 
 export default function IacDashboard() {
-  const { repository, days, setRepository, setDays } = useDashboardFilters({
-    defaultRepository: "io-infra",
-  });
+  const { repository, days, setRepository, setDays } = useDashboardFilters();
 
   const { data, loading, error, refetch } = useDashboardData<IacDashboardData>(
     "iac",

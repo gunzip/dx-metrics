@@ -1,10 +1,13 @@
-// Configuration constants - sourced from environment or defaults matching config.yaml
+// Configuration constants - repositories are sourced from config.yaml via next.config.ts.
 export const ORGANIZATION = process.env.ORGANIZATION || "pagopa";
 
-export const REPOSITORIES = (
-  process.env.REPOSITORIES ||
-  "dx,io-infra,io-wallet,io-messages,io-services-cms,io-auth-n-identity-domain,io-ipatente,io-cgn,io-cdc,io-sign,developer-portal,interop-be-monorepo,selfcare,plsm-service-management,selfcare-infra,b2b-portals"
-).split(",");
+const configuredRepositories = (process.env.NEXT_PUBLIC_REPOSITORIES || "dx")
+  .split(",")
+  .map((repository) => repository.trim())
+  .filter(Boolean);
+
+export const REPOSITORIES = configuredRepositories;
+export const DEFAULT_REPOSITORY = REPOSITORIES[0] || "dx";
 
 export const DX_TEAM_MEMBERS = (
   process.env.DX_TEAM_MEMBERS ||

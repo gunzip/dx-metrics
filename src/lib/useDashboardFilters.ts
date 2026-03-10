@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_REPOSITORY, REPOSITORIES } from "@/lib/config";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
@@ -19,12 +20,16 @@ interface DashboardFilterUpdates {
   days?: number;
 }
 
-const DEFAULT_REPOSITORY = "dx";
 const DEFAULT_DAYS = 120;
 const DEFAULT_MODE: DashboardFilterMode = "repository-and-time";
 
 const isPositiveInteger = (value: number) =>
   Number.isInteger(value) && value > 0;
+
+const getValidRepository = (repository: string | null, fallbackRepository: string) =>
+  repository && REPOSITORIES.includes(repository)
+    ? repository
+    : fallbackRepository;
 
 export function useDashboardFilters({
   defaultRepository = DEFAULT_REPOSITORY,
@@ -35,7 +40,14 @@ export function useDashboardFilters({
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const repository = searchParams.get("repository") || defaultRepository;
+  const resolvedDefaultRepository = getValidRepository(
+    defaultRepository,
+    DEFAULT_REPOSITORY,
+  );
+  const repository = getValidRepository(
+    searchParams.get("repository"),
+    resolvedDefaultRepository,
+  );
   const requestedDays = Number(searchParams.get("days"));
   const days = isPositiveInteger(requestedDays) ? requestedDays : defaultDays;
 
@@ -51,8 +63,14 @@ export function useDashboardFilters({
         params.delete("days");
       }
 
-      if (mode !== "time-only" && newParams.repository !== undefined) {
-        params.set("repository", newParams.repository);
+      if (mode !== "time-only") {
+        params.set(
+          "repository",
+          getValidRepository(
+            newParams.repository ?? repository,
+            resolvedDefaultRepository,
+          ),
+        );
       }
 
       if (mode !== "repository-only" && newParams.days !== undefined) {
@@ -63,7 +81,7 @@ export function useDashboardFilters({
 
       router.push(queryString ? `${pathname}?${queryString}` : pathname);
     },
-    [mode, pathname, router, searchParams],
+    [mode, pathname, repository, resolvedDefaultRepository, router, searchParams],
   );
 
   const setRepository = useCallback(
