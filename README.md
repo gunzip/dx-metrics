@@ -5,7 +5,7 @@ Uses PostgreSQL for data storage and Recharts for dashboard visualization.
 
 ## Architecture
 
-- **Next.js 15** (App Router) — frontend dashboards + API routes
+- **Next.js 16** (App Router) — frontend dashboards + API routes
 - **PostgreSQL 16** — persistent data storage
 - **Drizzle ORM** — type-safe database access
 - **Recharts** — chart rendering

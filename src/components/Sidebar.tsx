@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,6 +15,11 @@ import {
   Activity,
   Ship,
 } from "lucide-react";
+import {
+  readSidebarCollapsedState,
+  sidebarCollapsedStorageKey,
+  sidebarToggleEventName,
+} from "@/lib/sidebar-state";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -39,22 +44,14 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  // Load collapse state from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved !== null) {
-      setIsCollapsed(JSON.parse(saved));
-    }
-  }, []);
+  const [isCollapsed, setIsCollapsed] = useState(readSidebarCollapsedState);
 
   const toggleSidebar = () => {
     const newState = !isCollapsed;
     setIsCollapsed(newState);
-    localStorage.setItem("sidebar-collapsed", JSON.stringify(newState));
+    window.localStorage.setItem(sidebarCollapsedStorageKey, String(newState));
     // Dispatch a custom event to notify the layout
-    window.dispatchEvent(new Event("sidebar-toggle"));
+    window.dispatchEvent(new Event(sidebarToggleEventName));
   };
 
   return (

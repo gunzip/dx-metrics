@@ -1,3 +1,4 @@
+/** Protects app routes with Auth.js before route handling. */
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
