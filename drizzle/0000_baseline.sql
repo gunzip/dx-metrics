@@ -21,6 +21,14 @@ CREATE TABLE "config" (
 	"value" text NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "dx_pipeline_usages" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "dx_pipeline_usages_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"repository" text NOT NULL,
+	"caller_file" text NOT NULL,
+	"dx_workflow" text NOT NULL,
+	"ref" text
+);
+--> statement-breakpoint
 CREATE TABLE "dx_team_members" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "dx_team_members_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"username" text NOT NULL,
@@ -40,6 +48,15 @@ CREATE TABLE "iac_pr_lead_times" (
 	"target_authors" text[]
 );
 --> statement-breakpoint
+CREATE TABLE "pull_request_reviews" (
+	"id" bigint PRIMARY KEY NOT NULL,
+	"pull_request_id" bigint NOT NULL,
+	"repository_id" integer NOT NULL,
+	"reviewer" text,
+	"state" text,
+	"submitted_at" timestamp
+);
+--> statement-breakpoint
 CREATE TABLE "pull_requests" (
 	"id" bigint PRIMARY KEY NOT NULL,
 	"repository_id" integer NOT NULL,
@@ -52,7 +69,8 @@ CREATE TABLE "pull_requests" (
 	"merged_at" timestamp,
 	"merged_by" text,
 	"additions" integer,
-	"total_comments_count" integer
+	"total_comments_count" integer,
+	"draft" integer
 );
 --> statement-breakpoint
 CREATE TABLE "repositories" (
@@ -77,7 +95,8 @@ CREATE TABLE "terraform_modules" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "terraform_modules_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"repository" text NOT NULL,
 	"module" text NOT NULL,
-	"file_path" text
+	"file_path" text,
+	"version" text
 );
 --> statement-breakpoint
 CREATE TABLE "terraform_registry_releases" (
@@ -87,7 +106,8 @@ CREATE TABLE "terraform_registry_releases" (
 	"major_version" integer NOT NULL,
 	"first_release_version" text NOT NULL,
 	"release_date" timestamp,
-	"releases_count" integer
+	"releases_count" integer,
+	"latest_version" text
 );
 --> statement-breakpoint
 CREATE TABLE "tracker_requests" (
@@ -96,6 +116,8 @@ CREATE TABLE "tracker_requests" (
 	"closed_at" timestamp,
 	"category" text,
 	"priority" text,
+	"is_closed" text,
+	"status" text,
 	"raw_submitted_at" text,
 	"raw_closed_at" text
 );
@@ -119,6 +141,8 @@ CREATE TABLE "workflows" (
 --> statement-breakpoint
 ALTER TABLE "commits" ADD CONSTRAINT "commits_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "iac_pr_lead_times" ADD CONSTRAINT "iac_pr_lead_times_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pull_request_reviews" ADD CONSTRAINT "pull_request_reviews_pull_request_id_pull_requests_id_fk" FOREIGN KEY ("pull_request_id") REFERENCES "public"."pull_requests"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pull_request_reviews" ADD CONSTRAINT "pull_request_reviews_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sync_runs" ADD CONSTRAINT "sync_runs_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "workflow_runs" ADD CONSTRAINT "workflow_runs_repository_id_repositories_id_fk" FOREIGN KEY ("repository_id") REFERENCES "public"."repositories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -128,8 +152,12 @@ CREATE UNIQUE INDEX "code_search_query_repo_path_idx" ON "code_search_results" U
 CREATE INDEX "commit_repo_idx" ON "commits" USING btree ("repository_id");--> statement-breakpoint
 CREATE INDEX "commit_date_idx" ON "commits" USING btree ("committer_date");--> statement-breakpoint
 CREATE INDEX "commit_author_idx" ON "commits" USING btree ("author");--> statement-breakpoint
+CREATE UNIQUE INDEX "dx_pipeline_repo_file_wf_idx" ON "dx_pipeline_usages" USING btree ("repository","caller_file","dx_workflow");--> statement-breakpoint
 CREATE UNIQUE INDEX "iac_pr_repo_number_idx" ON "iac_pr_lead_times" USING btree ("repository_id","pr_number");--> statement-breakpoint
 CREATE INDEX "iac_pr_created_at_idx" ON "iac_pr_lead_times" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "prr_pr_idx" ON "pull_request_reviews" USING btree ("pull_request_id");--> statement-breakpoint
+CREATE INDEX "prr_repo_idx" ON "pull_request_reviews" USING btree ("repository_id");--> statement-breakpoint
+CREATE INDEX "prr_submitted_at_idx" ON "pull_request_reviews" USING btree ("submitted_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "pr_repo_number_idx" ON "pull_requests" USING btree ("repository_id","number");--> statement-breakpoint
 CREATE INDEX "pr_created_at_idx" ON "pull_requests" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "pr_merged_at_idx" ON "pull_requests" USING btree ("merged_at");--> statement-breakpoint
