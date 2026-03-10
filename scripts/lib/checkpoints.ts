@@ -14,18 +14,26 @@ export async function hasCheckpoint(
   repoName: string | null,
   since: string,
 ): Promise<boolean> {
-  const sinceDate = new Date(since);
+  const requestedSinceDate = new Date(since);
   const checkpointKey = getCheckpointKey(entityType, repoName);
-  const rows = await context.db.execute<{ since_date: string }>(
-    sql`SELECT since_date FROM sync_runs
-        WHERE entity_type = ${checkpointKey} AND status = 'done'`,
+
+  if (Number.isNaN(requestedSinceDate.getTime())) {
+    return false;
+  }
+
+  const rows = await context.db.execute<{ has_checkpoint: number }>(
+    sql`SELECT 1 AS has_checkpoint
+        FROM sync_runs
+        WHERE entity_type = ${checkpointKey}
+          AND status = 'done'
+          AND since_date IS NOT NULL
+          AND completed_at IS NOT NULL
+          AND since_date <= ${requestedSinceDate}
+          AND completed_at >= ${requestedSinceDate}
+        LIMIT 1`,
   );
 
-  return rows.rows.some(
-    (row) =>
-      Boolean(row.since_date) &&
-      new Date(row.since_date).getTime() <= sinceDate.getTime(),
-  );
+  return rows.rows.length > 0;
 }
 
 export async function startCheckpoint(
