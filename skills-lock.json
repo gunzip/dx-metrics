@@ -6,10 +6,20 @@
       "sourceType": "github",
       "computedHash": "57bfa07d34f966bccf791d49c9b6ce507fbba08f7dbf9e2ad15809e2dd29041e"
     },
+    "next-best-practices": {
+      "source": "vercel-labs/next-skills",
+      "sourceType": "github",
+      "computedHash": "515ba75178bd44875812d9a560bdf14651f86709f89cf1d4f209638e879807f3"
+    },
     "recharts": {
       "source": "ansanabria/skills",
       "sourceType": "github",
       "computedHash": "a34ecf6ee1664a089e800a7cec095e114c6c3e8a11a06d3dfe98a39aac13f70c"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "3462ec83f862abb2d532953df33a4dbf87f4616849da5d4b5cc7c13601aaf997"
     }
   }
 }

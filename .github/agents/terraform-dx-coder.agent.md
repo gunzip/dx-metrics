@@ -147,7 +147,7 @@ If yes, I'll generate the azure-github-environment-bootstrap module configuratio
 
 When generating code, refer to:
 
-**[Using Terraform Registry Modules](../../../apps/website/docs/terraform/using-terraform-registry-modules.md)** - Complete guide covering:
+**[Using Terraform Registry Modules](https://dx.pagopa.it/docs/terraform/using-terraform-registry-modules)** (local: `.dx/apps/website/docs/terraform/using-terraform-registry-modules.md`) - Complete guide covering:
 
 - Local `.dx/` module specifications and structure
 - Exact input/output extraction from README and examples
@@ -169,15 +169,22 @@ When generating code, refer to:
 - Reference module outputs for dependent resources
 - Document any fallback reasons in code comments
 
+**Attribution examples**:
+
+```hcl
 # ⚠ Direct HashiCorp Resource
-
 # Source: hashicorp/azurerm provider (no module available)
-
 resource "azurerm_log_analytics_workspace" "example" {
-...
+  # ...
 }
-
 ```
+
+```hcl
+# ✓ PagoPA DX Module
+# Source: pagopa-dx/azure-app-service/azurerm
+module "app_service" {
+  source  = "pagopa-dx/azure-app-service/azurerm"
+  version = "~> 2.0"
 
   # Virtual network configuration
   virtual_network = {
@@ -193,7 +200,7 @@ resource "azurerm_log_analytics_workspace" "example" {
 
   # Diagnostics
   diagnostic_settings = {
-    enabled                   = true
+    enabled                    = true
     log_analytics_workspace_id = azurerm_log_analytics_workspace.example.id
   }
 
@@ -381,17 +388,17 @@ For comprehensive information on DX code standards and best practices, refer to:
 
 **Code Style & Organization**:
 
-- **[Terraform Code Style](../../../apps/website/docs/terraform/code-style.md)** - File organization, conventions, naming standards, and formatting rules
-- **[Infrastructure Folder Structure](../../../apps/website/docs/terraform/infra-folder-structure.md)** - Project organization and tier structure
+- **[Terraform Code Style](https://dx.pagopa.it/docs/terraform/code-style)** (local: `.dx/apps/website/docs/terraform/code-style.md`) - File organization, conventions, naming standards, and formatting rules
+- **[Infrastructure Folder Structure](https://dx.pagopa.it/docs/terraform/infra-folder-structure)** (local: `.dx/apps/website/docs/terraform/infra-folder-structure.md`) - Project organization and tier structure
 
 **Required Standards**:
 
-- **[Required Tags](../../../apps/website/docs/terraform/required-tags.md)** - Mandatory tags for all Azure resources
-- **[Using Terraform Registry Modules](../../../apps/website/docs/terraform/using-terraform-registry-modules.md)** - Module lookup, usage patterns, and best practices
+- **[Required Tags](https://dx.pagopa.it/docs/terraform/required-tags)** (local: `.dx/apps/website/docs/terraform/required-tags.md`) - Mandatory tags for all Azure resources
+- **[Using Terraform Registry Modules](https://dx.pagopa.it/docs/terraform/using-terraform-registry-modules)** (local: `.dx/apps/website/docs/terraform/using-terraform-registry-modules.md`) - Module lookup, usage patterns, and best practices
 
 **DX Provider & Tools**:
 
-- **[Working with Terraform Index](../../../apps/website/docs/terraform/index.md)** - Overview of DX Terraform tools and resources
+- **[Terraform Overview](https://dx.pagopa.it/docs/terraform/)** (local: `.dx/apps/website/docs/terraform/index.md`) - Overview of DX Terraform tools and resources
 
 All generated code must follow the conventions documented in these guides. When unsure about specific patterns or standards, consult the documentation first.
 
@@ -543,68 +550,6 @@ infra/resources/_modules/
    - ❌ DO NOT: Generate App Services without private endpoints
    - ❌ DO NOT: Create Key Vaults without proper access policies
    - ✅ DO: Follow DX patterns for private endpoints and security
-
-## Bootstrapper Module Workflow
-
-When user needs GitHub Actions CI/CD setup in `infra/bootstrapper/<tier>/`:
-
-**Context Detection**: Ask/Confirm user is working in bootstrapper context:
-
-- "Are you setting up GitHub Actions authentication in infra/bootstrapper/? If yes, I'll use the bootstrap module pattern."
-
-**Module to Use**: `pagopa-dx/azure-github-environment-bootstrap/azurerm`
-
-**Pattern Example** (from existing `infra/bootstrapper/_modules/azure/main.tf`):
-
-```hcl
-module "bootstrap" {
-  source  = "pagopa-dx/azure-github-environment-bootstrap/azurerm"
-  version = "~> 3.0"
-
-  environment = var.environment
-
-  subscription_id = data.azurerm_subscription.current.id
-  tenant_id       = data.azurerm_client_config.current.tenant_id
-
-  entraid_groups = {
-    admins_object_id    = data.azuread_group.admins.object_id
-    devs_object_id      = data.azuread_group.developers.object_id
-    externals_object_id = data.azuread_group.externals.object_id
-  }
-
-  terraform_storage_account = {
-    name                = local.tf_storage_account.name
-    resource_group_name = local.tf_storage_account.resource_group_name
-  }
-
-  repository = var.repository
-
-  github_private_runner = {
-    container_app_environment_id       = module.core_values.github_runner.environment_id
-    container_app_environment_location = var.environment.location
-    labels = [local.env_long]
-    key_vault = {
-      name                = module.core_values.common_key_vault.name
-      resource_group_name = module.core_values.common_key_vault.resource_group_name
-      use_rbac            = true
-    }
-  }
-
-  pep_vnet_id                        = module.core_values.common_vnet.id
-  private_dns_zone_resource_group_id = module.core_values.network_resource_group_id
-  opex_resource_group_id             = module.core_values.opex_resource_group_id
-
-  additional_resource_group_ids = var.resource_group_ids
-  tags                          = var.tags
-}
-```
-
-**Key Points**:
-
-- This module handles ALL federated identity setup internally
-- Never generate federated identity resources directly alongside this module
-- The module outputs are used by application resources for RBAC
-- Reference actual module docs: `pagopa-dx/azure-github-environment-bootstrap/azurerm` on Terraform Registry
 
 ## Important Constraints
 

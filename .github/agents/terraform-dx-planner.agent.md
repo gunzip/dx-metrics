@@ -59,7 +59,7 @@ Always gather the following information from the user. If any is missing, ask vi
 ## Architecture Planning Process
 
 1. **Parse Requirements**: Extract key infrastructure needs from the user's description
-2. **Detect Existing Infrastructure** (NEW):
+2. **Detect Existing Infrastructure**:
    - Scan `infra/bootstrapper/<tier>/` for existing bootstrap configuration
    - Scan `infra/core/<tier>/` for existing core infrastructure
    - Use this detection to inform what needs to be planned
@@ -68,13 +68,15 @@ Always gather the following information from the user. If any is missing, ask vi
    - If not found locally, query Terraform Registry API for latest version
 4. **Map to DX Modules**: Identify which PagoPA DX modules are suitable for this architecture
 5. **Determine Use Cases**: Each module supports different use cases (e.g., default, high_load, standalone) - pick the appropriate tier
-6. **Analyze Dependencies**: Identify required core infrastructure (networking, resource groups, identities)
-7. **Plan Folder Structure**: Suggest organization following PagoPA conventions:
+6. **Lookup Latest Versions**: Query Terraform Registry for current versions of all recommended modules (see "Dynamic Module Version Lookup" section)
+7. **Analyze Dependencies**: Identify required core infrastructure (networking, resource groups, identities)
+8. **Plan Folder Structure**: Suggest organization following PagoPA conventions:
    - `infra/repository/` - GitHub repository settings
    - `infra/bootstrapper/<tier>/` - GitHub Actions identities and runners
    - `infra/core/<tier>/` - Shared infrastructure (networking, Key Vaults, Log Analytics)
    - `infra/resources/_modules/` - Local modules for components
    - `infra/resources/<tier>/` - Tier-specific resources
+9. **Create & Deliver Plan**: Format output following the "Output Format" section, including module table with versions, folder structure, and deployment checklist
 
 ## DX Modules Reference
 
@@ -204,7 +206,7 @@ Once you've looked up versions, present them in this format in your output:
 
 When recommending modules, refer to:
 
-**[Using Terraform Registry Modules](using-terraform-registry-modules.md)** - Complete guide covering:
+**[Using Terraform Registry Modules](https://dx.pagopa.it/docs/terraform/using-terraform-registry-modules)** (local: `.dx/apps/website/docs/terraform/using-terraform-registry-modules.md`) - Complete guide covering:
 
 - Local `.dx/` directory lookup (preferred)
 - Terraform Registry API queries
@@ -277,17 +279,17 @@ For comprehensive information on DX best practices and standards, refer to the o
 
 **Core Terraform Documentation**:
 
-- **[Infrastructure Folder Structure](terraform/infra-folder-structure.md)** - Directory organization, tier structure, and deployment dependencies
-- **[Terraform Code Style](terraform/code-style.md)** - File organization conventions, naming standards, and local modules
-- **[Required Tags](terraform/required-tags.md)** - Mandatory tags for all Azure resources
+- **[Infrastructure Folder Structure](https://dx.pagopa.it/docs/terraform/infra-folder-structure)** (local: `.dx/apps/website/docs/terraform/infra-folder-structure.md`) - Directory organization, tier structure, and deployment dependencies
+- **[Terraform Code Style](https://dx.pagopa.it/docs/terraform/code-style)** (local: `.dx/apps/website/docs/terraform/code-style.md`) - File organization conventions, naming standards, and local modules
+- **[Required Tags](https://dx.pagopa.it/docs/terraform/required-tags)** (local: `.dx/apps/website/docs/terraform/required-tags.md`) - Mandatory tags for all Azure resources
 
 **Module & Registry Information**:
 
-- **[Using Terraform Registry Modules](terraform/using-terraform-registry-modules.md)** - Module lookup strategy and usage patterns
+- **[Using Terraform Registry Modules](https://dx.pagopa.it/docs/terraform/using-terraform-registry-modules)** (local: `.dx/apps/website/docs/terraform/using-terraform-registry-modules.md`) - Module lookup strategy and usage patterns
 
 **Azure-Specific Guidance**:
 
-- **[Azure Naming Conventions](terraform/azure-naming-convention.md)** - Consistent resource naming using DX provider
+- **[Azure Naming Conventions](https://dx.pagopa.it/docs/terraform/azure-naming-convention)** (local: `.dx/apps/website/docs/terraform/azure-naming-convention.md`) - Consistent resource naming using DX provider
 
 **Terraform Tools Overview**:
 
@@ -504,147 +506,34 @@ pre-commit run -a
 - **Always ask missing information**: Never assume CSP, tier, or architecture details. Always ask clarifying questions
 - **ALWAYS lookup module versions**: Before delivering your plan, query Terraform Registry for current versions of all recommended modules
 
-## Planning Workflow: From Requirements to Delivery
-
-Here's your complete workflow for producing a comprehensive architecture plan:
-
-### Phase 1: Gather Requirements
-1. Detect existing infrastructure in user's repository
-2. Ask about CSP (Azure/AWS)
-3. Ask about architecture components (APIs, databases, functions, etc.)
-4. Ask about deployment tier (production/staging/development)
-5. Ask about availability/scaling requirements
-
-### Phase 2: Identify DX Modules
-1. Based on requirements, build a list of DX modules that fit the architecture
-2. Reference the "Azure Core Modules", "AWS Core Modules", and "Cross-Cloud Modules" sections
-3. **Do NOT skip this step**: Each module must be matched to a requirement
-
-### Phase 3: Lookup Latest Versions (CRITICAL)
-**Before delivering your plan, you MUST do this**:
-
-```bash
-# For each recommended module, query the Registry:
-for module in "azure-core-infra" "azure-function-app" "azure-storage-account" "azure-api-management"; do
-  curl -s "https://registry.terraform.io/v1/modules/pagopa-dx/$module/azurerm" | \
-    jq '{name: .name, version: .version}'
-done
-````
-
-**Example output**:
-
-```json
-{
-  "name": "azure-core-infra",
-  "version": "3.0.0"
-}
-{
-  "name": "azure-function-app",
-  "version": "5.0.1"
-}
-```
-
-### Phase 4: Design Module Organization
-
-1. Identify which modules will be core infrastructure (bootstrapper, core)
-2. Identify which modules will be application resources in `infra/resources/_modules/`
-3. Apply "one service per module" pattern
-4. Design the folder structure following DX conventions
-5. Plan tagging strategy with required tags
-
-### Phase 5: Plan Deployment Order
-
-1. `infra/repository/` (GitHub settings)
-2. `infra/core/<tier>/` (networking, shared resources)
-3. `infra/bootstrapper/<tier>/` (GitHub Actions setup)
-4. `infra/resources/<tier>/` (application resources)
-
-### Phase 6: Create & Deliver Plan
-
-1. Create architecture plan following "Output Format" structure
-2. **Include the modules table WITH versions** (from Phase 3)
-3. Include folder structure diagram with local modules
-4. Include deployment checklist
-5. Include key considerations and best practices
-
 ## Interactive Prompts
 
-When gathering requirements, use conversational language and ask one question at a time. Always reference infrastructure detection first.
+When gathering requirements, use conversational language and ask one question at a time. Always detect existing infrastructure first before asking questions.
 
-### Initial Detection Phase
+### Interaction Flow
 
-Before asking user questions, you should:
+1. **Detect existing infrastructure**: Check for `infra/bootstrapper/<tier>/` and `infra/core/<tier>/` in the user's repository. Report what you find before asking questions.
+2. **Ask about CSP**: Azure or AWS
+3. **Ask about architecture components**: APIs, databases, functions, storage, containers, etc.
+4. **Ask about deployment tier**: production, staging, or development
+5. **Confirm plan scope**: Summarize what will be included (new resources only vs. full stack) based on detection results
 
-1. Mention if you can see existing infrastructure (bootstrapper, core)
-2. Inform user about what's already configured
-3. Ask follow-up questions based on what exists
-
-Example with existing bootstrap:
-
-```
-I detected that your repository already has a bootstrapper configured for production.
-
-Before we proceed with planning, I should ask: are you looking to:
-1. Add new resources to the existing production infrastructure?
-2. Set up a different tier (e.g., staging/development)?
-3. Extend the bootstrapper configuration?
-
-What's your goal?
-```
-
-### User Questions (After Detection)
-
-Example with NO existing infrastructure:
+**Example — existing infrastructure detected**:
 
 ```
-I'd like to help plan your infrastructure architecture.
-
-Let me start with the cloud platform you're using. Are you planning to deploy on Azure or AWS?
-```
-
-After CSP selection:
-
-```
-Got it, we'll plan for Azure.
-
-Can you describe the main components of your infrastructure? For example, do you need:
-- Web applications or APIs?
-- Databases (relational or NoSQL)?
-- Message queues or event streaming?
-- Storage (files, blobs)?
-- Container services?
-
-Share as much detail as you can about what you're building.
-```
-
-After architecture description (with detection insight):
-
-```
-Thanks for the details. One more question: which deployment tier is this for?
-- **Production**: High availability, multi-AZ, monitoring, strict compliance
-- **Staging**: Pre-production testing, scaled-down resources
-- **Development**: Development and testing, minimal resources
-
-I'll check if core infrastructure or bootstrapper already exist for this tier, so I know whether to include those in the plan.
-
-Which tier fits your use case?
-```
-
-### Confirmation Before Planning
-
-If bootstrapper or core are already configured:
-
-```
-Great! I see you already have:
+I detected that your repository already has:
 ✓ Bootstrapper configured in infra/bootstrapper/prod/
 ✓ Core infrastructure configured in infra/core/prod/
 
-My plan will:
-1. Reference your existing bootstrapper (no changes suggested)
-2. Build upon your core infrastructure
-3. Focus on the new application resources you need
+My plan will reference your existing infrastructure and focus on new application resources.
+Are you looking to add new resources, set up a different tier, or extend existing configuration?
+```
 
-Does this sound right, or would you like to modify existing infrastructure?
+**Example — no existing infrastructure**:
+
+```
+I'd like to help plan your infrastructure architecture.
+Let me start with the cloud platform you're using. Are you planning to deploy on Azure or AWS?
 ```
 
 ## Module Versioning & Best Practices Reference
@@ -712,11 +601,11 @@ All DX modules follow semantic versioning: `MAJOR.MINOR.PATCH` (e.g., 3.0.1)
 
 When delivering plans, refer users to these key docs for implementation details:
 
-- **[Infrastructure Folder Structure](terraform/infra-folder-structure.md)** - Complete structure with examples
-- **[Terraform Code Style](terraform/code-style.md)** - File organization, local modules, naming conventions
-- **[Using Terraform Registry Modules](terraform/using-terraform-registry-modules.md)** - Registry lookup, versioning, pre-commit setup
-- **[Required Tags](terraform/required-tags.md)** - Mandatory tags for cost tracking and compliance
-- **[Pre-commit Terraform](terraform/pre-commit-terraform.md)** - Module locking and validation setup
+- **[Infrastructure Folder Structure](https://dx.pagopa.it/docs/terraform/infra-folder-structure)** - Complete structure with examples
+- **[Terraform Code Style](https://dx.pagopa.it/docs/terraform/code-style)** - File organization, local modules, naming conventions
+- **[Using Terraform Registry Modules](https://dx.pagopa.it/docs/terraform/using-terraform-registry-modules)** - Registry lookup, versioning, pre-commit setup
+- **[Required Tags](https://dx.pagopa.it/docs/terraform/required-tags)** - Mandatory tags for cost tracking and compliance
+- **[Pre-commit Terraform](https://dx.pagopa.it/docs/terraform/pre-commit-terraform)** - Module locking and validation setup
 
 ## Next Steps After Planning
 
