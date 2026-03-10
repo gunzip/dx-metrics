@@ -13,7 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Engineering Radar",
+  title: "Engineering Metrics",
   description: "DX Engineering Metrics Dashboard",
 };
 
