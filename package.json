@@ -19,7 +19,7 @@
     "lucide-react": "^0.577.0",
     "next": "^16.1.6",
     "next-auth": "^5.0.0-beta.25",
-    "octokit": "^3.2.2",
+    "octokit": "^5.0.5",
     "pg": "^8.13.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

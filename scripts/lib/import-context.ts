@@ -3,9 +3,9 @@
 import pg from "pg";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Octokit } from "octokit";
 import * as schema from "../../src/db/schema";
 import type { ImportSettings } from "./config";
+import type { Octokit } from "octokit";
 
 const createDatabaseConnection = (connectionString?: string) => {
   const pool = connectionString
@@ -32,12 +32,18 @@ export interface ImportContext {
   ensureRepo: (name: string) => Promise<number>;
 }
 
-export function createImportContext(settings: ImportSettings): ImportContext {
+const createOctokitClient = async (githubToken?: string): Promise<Octokit> => {
+  const { Octokit } = await import("octokit");
+
+  return githubToken ? new Octokit({ auth: githubToken }) : new Octokit();
+};
+
+export async function createImportContext(
+  settings: ImportSettings,
+): Promise<ImportContext> {
   const { databaseUrl, githubToken, ...config } = settings;
   const { pool, db } = createDatabaseConnection(databaseUrl);
-  const octokit = githubToken
-    ? new Octokit({ auth: githubToken })
-    : new Octokit();
+  const octokit = await createOctokitClient(githubToken);
 
   const ensureRepo = async (name: string): Promise<number> => {
     const fullName = `${config.organization}/${name}`;

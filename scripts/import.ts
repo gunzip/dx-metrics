@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2), process.cwd());
   const fileConfig = loadImportConfig(args.configPath);
   const settings = resolveImportSettings(fileConfig, readEnvironmentOverrides());
-  const context = createImportContext(settings);
+  const context = await createImportContext(settings);
   const stats = { skipped: 0 };
 
   try {
