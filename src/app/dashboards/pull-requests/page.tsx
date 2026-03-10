@@ -1,8 +1,7 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import { MetricCard } from "@/components/MetricCard";
 import {
   SimpleLineChart,
@@ -46,10 +45,11 @@ interface PrDashboardData {
 export default function PullRequestsDashboard() {
   const { repository, days, setRepository, setDays } = useDashboardFilters();
 
-  const { data, loading } = useDashboardData<PrDashboardData>("pull-requests", {
-    repository,
-    days,
-  });
+  const { data, loading, error, refetch } =
+    useDashboardData<PrDashboardData>("pull-requests", {
+      repository,
+      days,
+    });
 
   return (
     <div className="space-y-8">
@@ -73,13 +73,12 @@ export default function PullRequestsDashboard() {
         onRepositoryChange={setRepository}
         onTimeIntervalChange={setDays}
       />
-
-      {loading && (
-        <div className="flex items-center gap-2 text-gray-400">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
-          <p className="text-sm font-medium">Synchronizing data...</p>
-        </div>
-      )}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+        loadingMessage="Synchronizing data..."
+      />
 
       {data && (
         <div className="space-y-8">

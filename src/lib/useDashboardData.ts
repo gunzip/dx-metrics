@@ -1,39 +1,99 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+const buildDashboardQueryString = (params: Record<string, string | number>) => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params)
+    .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+    .forEach(([key, value]) => {
+      searchParams.set(key, String(value));
+    });
+
+  return searchParams.toString();
+};
+
+const extractDashboardErrorMessage = async (response: Response) => {
+  const fallbackMessage = `Request failed with status ${response.status}`;
+  const contentType = response.headers.get("content-type");
+
+  if (!contentType?.includes("application/json")) {
+    return fallbackMessage;
+  }
+
+  const payload: unknown = await response.json().catch(() => null);
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "error" in payload &&
+    typeof payload.error === "string"
+  ) {
+    return payload.error;
+  }
+
+  return fallbackMessage;
+};
 
 export function useDashboardData<T>(
   endpoint: string,
-  params: Record<string, string | number>
+  params: Record<string, string | number>,
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const paramsKey = JSON.stringify(params);
+  const queryString = useMemo(() => buildDashboardQueryString(params), [params]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
+
     try {
-      const qs = new URLSearchParams(
-        Object.entries(params).map(([k, v]) => [k, String(v)])
-      ).toString();
-      const res = await fetch(`/api/dashboards/${endpoint}?${qs}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      setData(json);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      const route = queryString
+        ? `/api/dashboards/${endpoint}?${queryString}`
+        : `/api/dashboards/${endpoint}`;
+      const response = await fetch(route, {
+        cache: "no-store",
+        signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(await extractDashboardErrorMessage(response));
+      }
+
+      const payload: T = await response.json();
+
+      if (!signal?.aborted) {
+        setData(payload);
+      }
+    } catch (caughtError) {
+      if (!signal?.aborted) {
+        setError(
+          caughtError instanceof Error ? caughtError.message : "Unknown error",
+        );
+      }
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endpoint, paramsKey]);
+  }, [endpoint, queryString]);
 
   useEffect(() => {
-    fetchData();
+    const controller = new AbortController();
+
+    void fetchData(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, [fetchData]);
 
-  return { data, loading, error, refetch: fetchData };
+  const refetch = useCallback(async () => {
+    await fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch };
 }

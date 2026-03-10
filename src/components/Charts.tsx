@@ -315,34 +315,35 @@ export function SimplePieChart({
 }
 
 // --- Data Table ---
-interface DataTableColumn {
-  key: string;
+interface DataTableColumn<TData extends object> {
+  key: Extract<keyof TData, string>;
   label: string;
   renderCell?: (
-    value: unknown,
-    row: Record<string, unknown>,
+    value: TData[Extract<keyof TData, string>],
+    row: TData,
   ) => React.ReactNode;
 }
 
-interface DataTableProps {
+interface DataTableProps<TData extends object> {
   title: string;
-  columns: DataTableColumn[];
-  data: Record<string, unknown>[];
+  columns: ReadonlyArray<DataTableColumn<TData>>;
+  data: readonly TData[];
   className?: string;
   tooltip?: string;
 }
 
-export function DataTable({
+export function DataTable<TData extends object>({
   title,
   columns,
   data,
   className = "",
   tooltip,
-}: DataTableProps) {
-  const [sortKey, setSortKey] = React.useState<string | null>(null);
+}: DataTableProps<TData>) {
+  const [sortKey, setSortKey] =
+    React.useState<Extract<keyof TData, string> | null>(null);
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
-  const handleSort = (key: string) => {
+  const handleSort = (key: Extract<keyof TData, string>) => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -352,16 +353,19 @@ export function DataTable({
   };
 
   const sorted = React.useMemo(() => {
-    if (!sortKey) return data;
+    if (!sortKey) {
+      return data;
+    }
+
     return [...data].sort((a, b) => {
-      const av = a[sortKey] ?? "";
-      const bv = b[sortKey] ?? "";
-      const an = Number(av);
-      const bn = Number(bv);
+      const leftValue = a[sortKey] ?? "";
+      const rightValue = b[sortKey] ?? "";
+      const leftNumber = Number(leftValue);
+      const rightNumber = Number(rightValue);
       const cmp =
-        !isNaN(an) && !isNaN(bn)
-          ? an - bn
-          : String(av).localeCompare(String(bv));
+        !isNaN(leftNumber) && !isNaN(rightNumber)
+          ? leftNumber - rightNumber
+          : String(leftValue).localeCompare(String(rightValue));
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [data, sortKey, sortDir]);

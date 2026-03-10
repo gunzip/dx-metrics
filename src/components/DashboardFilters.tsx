@@ -1,24 +1,32 @@
 "use client";
 
 import { REPOSITORIES, TIME_INTERVALS } from "@/lib/config";
+import type { DashboardFilterMode } from "@/lib/useDashboardFilters";
 
 interface DashboardFiltersProps {
   repository?: string;
   timeInterval?: number;
   onRepositoryChange?: (repo: string) => void;
   onTimeIntervalChange?: (days: number) => void;
-  showRepository?: boolean;
-  showTimeInterval?: boolean;
+  mode?: DashboardFilterMode;
 }
+
+const showsRepositoryFilter = (mode: DashboardFilterMode) =>
+  mode === "repository-and-time" || mode === "repository-only";
+
+const showsTimeIntervalFilter = (mode: DashboardFilterMode) =>
+  mode === "repository-and-time" || mode === "time-only";
 
 export function DashboardFilters({
   repository,
   timeInterval,
   onRepositoryChange,
   onTimeIntervalChange,
-  showRepository = true,
-  showTimeInterval = true,
+  mode = "repository-and-time",
 }: DashboardFiltersProps) {
+  const showRepository = showsRepositoryFilter(mode);
+  const showTimeInterval = showsTimeIntervalFilter(mode);
+
   return (
     <div className="mb-8 flex flex-wrap gap-6 items-end">
       {showRepository && (

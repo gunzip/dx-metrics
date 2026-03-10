@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import { MetricCard } from "@/components/MetricCard";
 import { SimpleLineChart, SimpleBarChart } from "@/components/Charts";
 import TooltipIcon from "@/components/TooltipIcon";
@@ -23,7 +24,10 @@ interface TrackerData {
 }
 
 export default function TrackerDashboard() {
-  const { data, loading } = useDashboardData<TrackerData>("tracker", {});
+  const { data, loading, error, refetch } = useDashboardData<TrackerData>(
+    "tracker",
+    {},
+  );
 
   return (
     <div>
@@ -34,7 +38,11 @@ export default function TrackerDashboard() {
         <TooltipIcon content={tooltipContent.title} />
       </div>
 
-      {loading && <p className="text-gray-500">Loading...</p>}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+      />
 
       {data && (
         <>

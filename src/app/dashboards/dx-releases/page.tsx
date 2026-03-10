@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import { SimpleLineChart, DataTable } from "@/components/Charts";
 import { MetricCard } from "@/components/MetricCard";
 import TooltipIcon from "@/components/TooltipIcon";
@@ -60,10 +61,8 @@ function StatCard({
 }
 
 export default function ReleasesDashboard() {
-  const { data, loading } = useDashboardData<ReleasesDashboardData>(
-    "releases",
-    {},
-  );
+  const { data, loading, error, refetch } =
+    useDashboardData<ReleasesDashboardData>("releases", {});
 
   const releasesTimelineChartData = (data?.releasesTimeline ?? []).map((r) => ({
     month: r.month,
@@ -85,12 +84,12 @@ export default function ReleasesDashboard() {
         <TooltipIcon content={tooltipContent.title} />
       </div>
 
-      {loading && (
-        <div className="flex items-center gap-2 text-gray-400">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
-          <p className="text-sm font-medium">Fetching registry data...</p>
-        </div>
-      )}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+        loadingMessage="Fetching registry data..."
+      />
 
       {data && (
         <div className="space-y-8">
@@ -162,7 +161,7 @@ export default function ReleasesDashboard() {
                 ),
               },
             ]}
-            data={data.modulesSummary as unknown as Record<string, unknown>[]}
+            data={data.modulesSummary}
             tooltip={tooltipContent.moduleCatalog}
           />
         </div>

@@ -1,8 +1,7 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import { SimplePieChart, DataTable } from "@/components/Charts";
 import { MetricCard } from "@/components/MetricCard";
 import TooltipIcon from "@/components/TooltipIcon";
@@ -35,11 +34,14 @@ interface DxAdoptionData {
 }
 
 export default function DxAdoptionDashboard() {
-  const { repository, setRepository } = useDashboardFilters();
-
-  const { data, loading } = useDashboardData<DxAdoptionData>("dx-adoption", {
-    repository,
+  const { repository, setRepository } = useDashboardFilters({
+    mode: "repository-only",
   });
+
+  const { data, loading, error, refetch } =
+    useDashboardData<DxAdoptionData>("dx-adoption", {
+      repository,
+    });
 
   const pipelinePie =
     data?.pipelineAdoption.map((r) => ({
@@ -88,12 +90,15 @@ export default function DxAdoptionDashboard() {
         <TooltipIcon content={tooltipContent.title} />
       </div>
       <DashboardFilters
+        mode="repository-only"
         repository={repository}
         onRepositoryChange={setRepository}
-        showTimeInterval={false}
       />
-
-      {loading && <p className="text-gray-500">Loading...</p>}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+      />
 
       {data && (
         <>
@@ -179,9 +184,7 @@ export default function DxAdoptionDashboard() {
                       driftStatusBadge(String(value ?? "unknown")),
                   },
                 ]}
-                data={
-                  data.versionDriftList as unknown as Record<string, unknown>[]
-                }
+                data={data.versionDriftList}
                 tooltip={tooltipContent.versionDrift}
               />
             </>

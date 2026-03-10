@@ -1,38 +1,86 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 
-export function useDashboardFilters({
-  defaultRepository = "dx",
-  defaultDays = 120,
-}: {
+export type DashboardFilterMode =
+  | "repository-and-time"
+  | "repository-only"
+  | "time-only";
+
+interface UseDashboardFiltersOptions {
   defaultRepository?: string;
   defaultDays?: number;
-} = {}) {
+  mode?: DashboardFilterMode;
+}
+
+interface DashboardFilterUpdates {
+  repository?: string;
+  days?: number;
+}
+
+const DEFAULT_REPOSITORY = "dx";
+const DEFAULT_DAYS = 120;
+const DEFAULT_MODE: DashboardFilterMode = "repository-and-time";
+
+const isPositiveInteger = (value: number) =>
+  Number.isInteger(value) && value > 0;
+
+export function useDashboardFilters({
+  defaultRepository = DEFAULT_REPOSITORY,
+  defaultDays = DEFAULT_DAYS,
+  mode = DEFAULT_MODE,
+}: UseDashboardFiltersOptions = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
   const repository = searchParams.get("repository") || defaultRepository;
-  const days = Number(searchParams.get("days")) || defaultDays;
+  const requestedDays = Number(searchParams.get("days"));
+  const days = isPositiveInteger(requestedDays) ? requestedDays : defaultDays;
 
   const updateFilters = useCallback(
-    (newParams: { repository?: string; days?: number }) => {
+    (newParams: DashboardFilterUpdates) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (newParams.repository !== undefined) {
+
+      if (mode === "time-only") {
+        params.delete("repository");
+      }
+
+      if (mode === "repository-only") {
+        params.delete("days");
+      }
+
+      if (mode !== "time-only" && newParams.repository !== undefined) {
         params.set("repository", newParams.repository);
       }
-      if (newParams.days !== undefined) {
+
+      if (mode !== "repository-only" && newParams.days !== undefined) {
         params.set("days", newParams.days.toString());
       }
-      router.push(`${pathname}?${params.toString()}`);
+
+      const queryString = params.toString();
+
+      router.push(queryString ? `${pathname}?${queryString}` : pathname);
     },
-    [router, pathname, searchParams],
+    [mode, pathname, router, searchParams],
   );
 
-  const setRepository = (repo: string) => updateFilters({ repository: repo });
-  const setDays = (d: number) => updateFilters({ days: d });
+  const setRepository = useCallback(
+    (nextRepository: string) => {
+      updateFilters({ repository: nextRepository });
+    },
+    [updateFilters],
+  );
+
+  const setDays = useCallback(
+    (nextDays: number) => {
+      updateFilters({
+        days: isPositiveInteger(nextDays) ? nextDays : defaultDays,
+      });
+    },
+    [defaultDays, updateFilters],
+  );
 
   return {
     repository,

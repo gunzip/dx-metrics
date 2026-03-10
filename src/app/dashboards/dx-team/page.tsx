@@ -1,8 +1,7 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import { SimpleBarChart, DataTable } from "@/components/Charts";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
@@ -23,13 +22,16 @@ interface DxTeamData {
     repository_commits: number;
   }[];
   dxAdoptingProjects: { repository: string }[];
-  dxPipelinesUsage: { pipeline_name: string; repository_count: number }[];
+  dxPipelinesUsage: { dx_path: string; repository_count: number }[];
 }
 
 export default function DxTeamDashboard() {
-  const { days, setDays } = useDashboardFilters();
+  const { days, setDays } = useDashboardFilters({ mode: "time-only" });
 
-  const { data, loading } = useDashboardData<DxTeamData>("dx-team", { days });
+  const { data, loading, error, refetch } = useDashboardData<DxTeamData>(
+    "dx-team",
+    { days },
+  );
 
   return (
     <div>
@@ -38,12 +40,15 @@ export default function DxTeamDashboard() {
         <TooltipIcon content={tooltipContent.title} />
       </div>
       <DashboardFilters
+        mode="time-only"
         timeInterval={days}
         onTimeIntervalChange={setDays}
-        showRepository={false}
       />
-
-      {loading && <p className="text-gray-500">Loading...</p>}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+      />
 
       {data && (
         <>

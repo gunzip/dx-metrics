@@ -1,8 +1,7 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import { MetricCard } from "@/components/MetricCard";
 import {
   SimpleLineChart,
@@ -37,13 +36,15 @@ interface PrReviewDashboardData {
 export default function PullRequestsReviewDashboard() {
   const { repository, days, setRepository, setDays } = useDashboardFilters();
 
-  const { data, loading } = useDashboardData<PrReviewDashboardData>(
-    "pull-requests-review",
-    {
+  const { data, loading, error, refetch } =
+    useDashboardData<PrReviewDashboardData>("pull-requests-review", {
       repository,
       days,
-    },
-  );
+    });
+
+  const reviewMatrixWithoutSelfReviews =
+    data?.reviewMatrix.filter(({ author, reviewer }) => author !== reviewer) ??
+    [];
 
   return (
     <div>
@@ -59,8 +60,11 @@ export default function PullRequestsReviewDashboard() {
         onRepositoryChange={setRepository}
         onTimeIntervalChange={setDays}
       />
-
-      {loading && <p className="text-gray-500">Loading...</p>}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+      />
 
       {data && (
         <>
@@ -153,7 +157,7 @@ export default function PullRequestsReviewDashboard() {
                     { key: "approvals", label: "Approvals" },
                     { key: "change_requests", label: "Changes Requested" },
                   ]}
-                  data={data.reviewDistribution as Record<string, unknown>[]}
+                  data={data.reviewDistribution}
                   tooltip={tooltipContent.reviewerStats}
                 />
               </div>
@@ -165,9 +169,7 @@ export default function PullRequestsReviewDashboard() {
                     { key: "reviewer", label: "Reviewer" },
                     { key: "review_count", label: "Reviews" },
                   ]}
-                  data={(data.reviewMatrix as Record<string, unknown>[]).filter(
-                    (row) => row.author !== row.reviewer
-                  )}
+                  data={reviewMatrixWithoutSelfReviews}
                   tooltip={tooltipContent.authorReviewerMatrix}
                 />
               </div>

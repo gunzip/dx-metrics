@@ -1,8 +1,7 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import {
   SimpleLineChart,
   SimpleBarChart,
@@ -10,6 +9,7 @@ import {
 } from "@/components/Charts";
 import { MetricCard } from "@/components/MetricCard";
 import TooltipIcon from "@/components/TooltipIcon";
+import { pivotCumulativeSeries } from "@/lib/pivot-cumulative-series";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
 import { workflowsTooltips as tooltipContent } from "./tooltips";
@@ -51,10 +51,11 @@ interface WorkflowDashboardData {
 export default function WorkflowsDashboard() {
   const { repository, days, setRepository, setDays } = useDashboardFilters();
 
-  const { data, loading } = useDashboardData<WorkflowDashboardData>(
-    "workflows",
-    { repository, days },
-  );
+  const { data, loading, error, refetch } =
+    useDashboardData<WorkflowDashboardData>("workflows", {
+      repository,
+      days,
+    });
 
   const formatDate = (value: string) => {
     if (!value) return value;
@@ -71,33 +72,12 @@ export default function WorkflowsDashboard() {
     }
   };
 
-  // Pivot dxVsNonDx for chart
-  const dxVsNonDxPivoted = (() => {
-    if (!data?.dxVsNonDx) return [];
-    const map = new Map<
-      string,
-      { run_date: string; dx: number; non_dx: number }
-    >();
-    for (const row of data.dxVsNonDx) {
-      const entry = map.get(row.run_date) || {
-        run_date: row.run_date,
-        dx: 0,
-        non_dx: 0,
-      };
-      if (row.pipeline_type === "DX Pipelines")
-        entry.dx = Number(row.cumulative_count);
-      else entry.non_dx = Number(row.cumulative_count);
-      map.set(row.run_date, entry);
-    }
-    const arr = Array.from(map.values());
-    // Fill forward: carry last cumulative value on days where a type has no entry
-    for (let i = 1; i < arr.length; i++) {
-      if (arr[i].dx === 0 && arr[i - 1].dx > 0) arr[i].dx = arr[i - 1].dx;
-      if (arr[i].non_dx === 0 && arr[i - 1].non_dx > 0)
-        arr[i].non_dx = arr[i - 1].non_dx;
-    }
-    return arr;
-  })();
+  const dxVsNonDxPivoted = data
+    ? pivotCumulativeSeries(data.dxVsNonDx, "pipeline_type", {
+        "DX Pipelines": "dx",
+        "Non-DX Pipelines": "non_dx",
+      })
+    : [];
 
   return (
     <div>
@@ -111,8 +91,11 @@ export default function WorkflowsDashboard() {
         onRepositoryChange={setRepository}
         onTimeIntervalChange={setDays}
       />
-
-      {loading && <p className="text-gray-500">Loading...</p>}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+      />
 
       {data && (
         <>

@@ -1,14 +1,14 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { DashboardFilters } from "@/components/DashboardFilters";
+import { DashboardRequestState } from "@/components/dashboard-request-state";
 import {
   SimpleLineChart,
   SimpleBarChart,
   DataTable,
 } from "@/components/Charts";
 import TooltipIcon from "@/components/TooltipIcon";
+import { pivotCumulativeSeries } from "@/lib/pivot-cumulative-series";
 import { useDashboardData } from "@/lib/useDashboardData";
 import { useDashboardFilters } from "@/lib/useDashboardFilters";
 import { iacTooltips as tooltipContent } from "./tooltips";
@@ -35,39 +35,20 @@ export default function IacDashboard() {
     defaultRepository: "io-infra",
   });
 
-  const { data, loading } = useDashboardData<IacDashboardData>("iac", {
-    repository,
-    days,
-  });
+  const { data, loading, error, refetch } = useDashboardData<IacDashboardData>(
+    "iac",
+    {
+      repository,
+      days,
+    },
+  );
 
-  // Pivot supervised vs unsupervised
-  const supervisedPivoted = (() => {
-    if (!data?.supervisedVsUnsupervised) return [];
-    const map = new Map<
-      string,
-      { run_date: string; supervised: number; unsupervised: number }
-    >();
-    for (const row of data.supervisedVsUnsupervised) {
-      const entry = map.get(row.run_date) || {
-        run_date: row.run_date,
-        supervised: 0,
-        unsupervised: 0,
-      };
-      if (row.pr_type === "Supervised PRs")
-        entry.supervised = Number(row.cumulative_count);
-      else entry.unsupervised = Number(row.cumulative_count);
-      map.set(row.run_date, entry);
-    }
-    const arr = Array.from(map.values());
-    // Fill forward: carry last cumulative value on days where a type has no entry
-    for (let i = 1; i < arr.length; i++) {
-      if (arr[i].supervised === 0 && arr[i - 1].supervised > 0)
-        arr[i].supervised = arr[i - 1].supervised;
-      if (arr[i].unsupervised === 0 && arr[i - 1].unsupervised > 0)
-        arr[i].unsupervised = arr[i - 1].unsupervised;
-    }
-    return arr;
-  })();
+  const supervisedPivoted = data
+    ? pivotCumulativeSeries(data.supervisedVsUnsupervised, "pr_type", {
+        "Supervised PRs": "supervised",
+        "Unsupervised PRs": "unsupervised",
+      })
+    : [];
 
   return (
     <div>
@@ -83,8 +64,11 @@ export default function IacDashboard() {
         onRepositoryChange={setRepository}
         onTimeIntervalChange={setDays}
       />
-
-      {loading && <p className="text-gray-500">Loading...</p>}
+      <DashboardRequestState
+        loading={loading}
+        error={error}
+        onRetry={refetch}
+      />
 
       {data && (
         <>
