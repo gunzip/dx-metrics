@@ -131,6 +131,12 @@ export function SimpleLineChart({
             color: "#e6edf3",
           }}
           itemStyle={{ color: "#e6edf3" }}
+          formatter={(value) => {
+            if (typeof value === "number") {
+              return value.toFixed(2);
+            }
+            return value;
+          }}
         />
         <Legend
           wrapperStyle={{
@@ -240,6 +246,12 @@ export function SimpleBarChart({
             color: "#e6edf3",
           }}
           itemStyle={{ color: "#e6edf3" }}
+          formatter={(value) => {
+            if (typeof value === "number") {
+              return value.toFixed(2);
+            }
+            return value;
+          }}
         />
         <Legend
           wrapperStyle={{
@@ -306,6 +318,12 @@ export function SimplePieChart({
               color: "#e6edf3",
             }}
             itemStyle={{ color: "#e6edf3" }}
+            formatter={(value) => {
+              if (typeof value === "number") {
+                return value.toFixed(2);
+              }
+              return value;
+            }}
           />
           <Legend wrapperStyle={{ fontSize: "12px", color: "#8b949e" }} />
         </PieChart>
